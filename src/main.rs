@@ -3,19 +3,21 @@ use clap::{arg, Command};
 mod license;
 mod readme;
 
-fn main() {
-    let cmd = Command::new("")
+fn cli() -> Command {
+    Command::new("")
         .about("repotools")
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(
             license::get_cmd()
-            )
+        )
         .subcommand(
             readme::get_cmd()
-            );
+        )
+}
 
-    let matches = cmd.get_matches();
+fn main() {
+    let matches = cli().get_matches();
 
     match matches.subcommand() {
         Some(("license", sub_matches)) => {
