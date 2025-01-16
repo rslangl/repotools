@@ -1,4 +1,4 @@
-use clap::{arg, Command};
+use clap::{Arg, Command};
 use std::path::PathBuf;
 use lazy_static::lazy_static;
 
@@ -33,7 +33,10 @@ impl License {
 pub fn get_cmd() -> clap::Command {
     clap::Command::new("license")
         .about("license")
-        .arg(clap::arg!(<LICENSE> "The license to add"))
+        .arg(
+            Arg::new("name")
+            .required(true),
+        )
         .arg_required_else_help(true)
 }
 
@@ -55,10 +58,10 @@ mod tests {
             "addlicense", "license", "MIT"
         ]);
 
-        let arg_license = matches.get_one::<String>("license").unwrap();
-        println!("!!!!!{}", arg_license);
-
-        assert!(LICENSES.clone().unwrap().iter().any(|item| item.name == *arg_license));
+        if let Some(license_matches) = matches.subcommand_matches("license") {
+            let license_value = license_matches.get_one::<String>("name").unwrap();
+            assert!(LICENSES.clone().unwrap().iter().any(|item| item.name == *license_value));
+        }
     }
 }
 
