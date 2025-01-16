@@ -63,5 +63,17 @@ mod tests {
             assert!(LICENSES.clone().unwrap().iter().any(|item| item.name == *license_value));
         }
     }
+
+    #[test]
+    fn invalid_license() {
+        let matches = mock_cli().get_matches_from(vec![
+            "addlicense", "license", "NotALicense"
+        ]);
+
+        if let Some(license_matches) = matches.subcommand_matches("license") {
+            let license_value = license_matches.get_one::<String>("name").unwrap();
+            assert!(!LICENSES.clone().unwrap().iter().any(|item| item.name == *license_value));
+        }
+    }
 }
 
