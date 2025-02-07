@@ -1,6 +1,7 @@
 use clap::{arg, Command};
 use lazy_static::lazy_static;
 use tera::{Tera, Context};
+use std::path::PathBuf;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
@@ -35,7 +36,7 @@ struct Readme {
 
 impl Readme {
 
-    fn new(path: PathBuf) -> Readme {
+    fn new(path: PathBuf) {
         let mut context = Context::new();
 
         context.insert("overview", &CONTENT.get(&"overview"));
@@ -66,7 +67,7 @@ impl Readme {
                 }
             }
         };
-    };
+    }
 }
 
 pub fn get_cmd() -> clap::Command {
