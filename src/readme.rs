@@ -1,4 +1,4 @@
-use clap::{arg, Command};
+use clap::{Arg, Command};
 use lazy_static::lazy_static;
 use tera::{Tera, Context};
 use std::path::PathBuf;
@@ -36,11 +36,11 @@ struct Readme {
 
 impl Readme {
 
-    fn new(path: PathBuf) {
+    fn new(path: PathBuf, content: HashMap<&'static str, &'static str>) {
         let mut context = Context::new();
 
-        context.insert("overview", &CONTENT.get(&"overview"));
-        context.insert("usage", &CONTENT.get(&"usage"));
+        context.insert("overview", &content.get(&"overview"));
+        context.insert("usage", &content.get(&"usage"));
 
         Tera::one_off("overview", &Context::new(), true).unwrap();
 
@@ -72,17 +72,25 @@ impl Readme {
 
 pub fn get_cmd() -> clap::Command {
     clap::Command::new("readme")
-        .about("readme")
-        .arg(clap::arg!(<PATH> "Path"))
+        .about("Adds or manages README files")
+        //.arg(clap::arg!(<PATH> "Path"))
+        .arg(
+            Arg::new("path")
+            .short('p')
+            .long("path")
+            )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::Readme;
+    use crate::readme::get_cmd;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
     use clap::{Command, Arg};
 
     fn mock_cli() -> Command {
-        Command::new("addreadme")
+        Command::new("readme")
             .subcommand(
                 get_cmd()
             )
@@ -96,10 +104,15 @@ mod tests {
         ]);
 
         let matches = mock_cli().get_matches_from(vec![
-            "addreadme", "."
+            "readme", "-p", "."
         ]);
 
         // TODO: check file contents and path correctness
+        if let Some(readme_matches) = matches.subcommand_matches("readme") {
+            let readme_path = readme_matches.get_one::<String>("--path").unwrap();
+            let readme_file = Readme::new(PathBuf::from(readme_path), CONTENT);
+            
+        }
 
     }
 
