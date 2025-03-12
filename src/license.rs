@@ -1,18 +1,20 @@
 use clap::{Arg, Command};
 use std::path::PathBuf;
 use lazy_static::lazy_static;
+use std::sync::Mutex;
+use crate::config::Config;
 
 lazy_static! {
-    static ref LICENSES: Option<Vec<License>> = {
+    static ref LICENSES: Mutex<Option<Vec<License>>> = Mutex::new(
         Some(vec![
             License::new("MIT"),
             License::new("GPLv3")
         ])
-    };
+    );
 }
 
 #[derive(Clone)]
-struct License {
+pub struct License {
     name: String,
     auto_fetch: bool,
     file_path: PathBuf,
@@ -26,6 +28,16 @@ impl License {
             auto_fetch: true,
             file_path: PathBuf::from(name),
             remote_url: String::from(name)
+        }
+    }
+
+    pub fn init(cfg: Config) {
+        let mut guard = LICENSES.lock().unwrap();
+
+        if let Some(lic) = guard.as_mut() {
+            for l in lic.iter_mut() {
+                l.file_path = cfg.data_dir()
+            }
         }
     }
 }
