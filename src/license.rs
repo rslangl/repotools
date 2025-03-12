@@ -34,7 +34,7 @@ pub fn get_cmd() -> clap::Command {
     clap::Command::new("license")
         .about("license")
         .arg(
-            Arg::new("name")
+            Arg::new("LICENSE")
             .required(true),
         )
         .arg_required_else_help(true)
