@@ -1,7 +1,9 @@
-use clap::{arg, Command};
+use crate::config::{Config, get_cfg};
+use clap::Command;
 
 mod license;
 mod readme;
+mod config;
 
 fn cli() -> Command {
     Command::new("")
@@ -17,6 +19,9 @@ fn cli() -> Command {
 }
 
 fn main() {
+
+    let cfg = get_cfg();
+
     let matches = cli().get_matches();
 
     match matches.subcommand() {
