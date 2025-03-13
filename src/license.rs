@@ -1,8 +1,9 @@
 use clap::{Arg, Command};
 use std::path::PathBuf;
-use lazy_static::lazy_static;
-use std::sync::Mutex;
-use crate::config::Config;
+//use lazy_static::lazy_static;
+//use std::sync::Mutex;
+use serde::Serialize;
+//use crate::config::Config;
 
 //lazy_static! {
 //    static ref LICENSES: Mutex<Option<Vec<License>>> = Mutex::new(
@@ -13,7 +14,7 @@ use crate::config::Config;
 //    );
 //}
 
-#[derive(Clone)]
+#[derive(Serialize)]
 pub struct License {
     name: String,  
     file_path: PathBuf,
@@ -21,7 +22,7 @@ pub struct License {
 }
 
 impl License {
-    fn new(path: &str, name: &str, url: &str) -> License {
+    pub fn new(path: &str, name: &str, url: &str) -> License {
         License {
             name: String::from(name),
             file_path: PathBuf::from(path).join(name),
