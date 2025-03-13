@@ -4,42 +4,43 @@ use lazy_static::lazy_static;
 use std::sync::Mutex;
 use crate::config::Config;
 
-lazy_static! {
-    static ref LICENSES: Mutex<Option<Vec<License>>> = Mutex::new(
-        Some(vec![
-            License::new("MIT"),
-            License::new("GPLv3")
-        ])
-    );
-}
+//lazy_static! {
+//    static ref LICENSES: Mutex<Option<Vec<License>>> = Mutex::new(
+//        Some(vec![
+//            License::new("MIT", "https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0"),
+//            License::new("GPLv3")
+//        ])
+//    );
+//}
 
 #[derive(Clone)]
 pub struct License {
-    name: String,
-    auto_fetch: bool,
+    name: String,  
     file_path: PathBuf,
     remote_url: String,
 }
 
 impl License {
-    fn new(name: &str) -> License {
+    fn new(path: &str, name: &str, url: &str) -> License {
         License {
             name: String::from(name),
-            auto_fetch: true,
-            file_path: PathBuf::from(name),
-            remote_url: String::from(name)
+            file_path: PathBuf::from(path).join(name),
+            remote_url: String::from(url)
         }
     }
 
-    pub fn init(cfg: Config) {
-        let mut guard = LICENSES.lock().unwrap();
-
-        if let Some(lic) = guard.as_mut() {
-            for l in lic.iter_mut() {
-                l.file_path = cfg.data_dir()
-            }
-        }
-    }
+//    pub fn init(cfg: Config) {
+//
+//        let mut guard = LICENSES.lock().unwrap();
+//
+//        if let Some(lic) = guard.as_mut() {
+//            for l in lic.iter_mut() {
+//                l.file_path = cfg.data_dir();
+//                let uri = l.remote_url.parse()?;
+//                let f = cfg.data_dir().push(l.name);
+//            }
+//        }
+//    }
 }
 
 pub fn get_cmd() -> clap::Command {

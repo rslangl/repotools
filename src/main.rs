@@ -29,7 +29,7 @@ fn main() {
     match matches.subcommand() {
         Some(("license", sub_matches)) => {
             println!("license: {}", sub_matches.get_one::<String>("LICENSE").expect("required"));
-            License::init(cfg);
+            //License::init(cfg);
         },
         Some(("readme", sub_matches)) => {
             println!("readme: {}", sub_matches.get_one::<String>("PATH").expect("required"));

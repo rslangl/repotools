@@ -1,15 +1,21 @@
 use std::path::PathBuf;
+use crate::license::License;
 
 pub struct Config {
     config_dir: PathBuf,
     data_dir: PathBuf,
+    auto_fetch: bool,
+    licenses: Vec<License>,
 }
 
 impl Config {
     pub fn new(cfg: PathBuf, data: PathBuf) -> Config {
         Config{
             config_dir: cfg,
-            data_dir: data
+            data_dir: data,
+            auto_fetch: true,
+            licenses: vec![],
+
         }
     }
 
@@ -34,7 +40,7 @@ pub fn get_cfg() -> Result<Config, String> {
                 data_dir
             }
             Err(e) => {
-               println!("Failed to create data directory: {}", e);
+                println!("Failed to create data directory: {}", e);
                 PathBuf::new()
             }
         };
@@ -49,6 +55,8 @@ pub fn get_cfg() -> Result<Config, String> {
                 PathBuf::new()
             }
         };
+
+        // TODO: create config, write to file
 
         Ok(Config::new(cfg, data))
 
