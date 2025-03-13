@@ -4,7 +4,12 @@ use std::path::PathBuf;
 //use std::sync::Mutex;
 use serde::Serialize;
 //use crate::config::Config;
-
+use http_body_util::{Empty, BodyExt};
+use tokio::net::TcpStream;
+use tokio::io::{self, AsyncWriteExt as _};
+use hyper::Request;
+use hyper::body::Bytes;
+use hyper_util::rt::TokioIo;
 //lazy_static! {
 //    static ref LICENSES: Mutex<Option<Vec<License>>> = Mutex::new(
 //        Some(vec![
@@ -23,11 +28,55 @@ pub struct License {
 
 impl License {
     pub fn new(path: &str, name: &str, url: &str) -> License {
+
+        License::download(url);
+
         License {
             name: String::from(name),
             file_path: PathBuf::from(path).join(name),
             remote_url: String::from(url)
         }
+    }
+
+    async fn download(url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {   // TODO: move to separate util crate or summat
+        //let url = self.remote_url.parse::<hyper::Uri>()?;
+        let url = url.parse::<hyper::Uri>()?;
+
+        let host = url.host().expect("URI has no host");
+        let port = url.port_u16().unwrap_or(80);
+
+        let stream = TcpStream::connect(format!("{}:{}", host, port)).await?;
+        let io = TokioIo::new(stream);
+
+        let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
+
+        tokio::task::spawn(async move {
+            if let Err(err) = conn.await {
+                println!("Connection failed: {:?}", err);
+            }
+        });
+
+        let authority = url.authority().unwrap().clone();
+
+        let path = url.path();
+        let req = Request::builder()
+            .uri(path)
+            .header(hyper::header::HOST, authority.as_str())
+            .body(Empty::<Bytes>::new())?;
+
+        let mut res = sender.send_request(req).await?;
+
+        println!("Response: {}", res.status());
+        println!("Headers: {:#?}\n", res.headers());
+
+        while let Some(next) = res.frame().await {
+            let frame = next?;
+            if let Some(chunk) = frame.data_ref() {
+                io::stdout().write_all(chunk).await?;
+            }
+        }
+
+        Ok(())
     }
 
 //    pub fn init(cfg: Config) {
@@ -43,6 +92,7 @@ impl License {
 //        }
 //    }
 }
+
 
 pub fn get_cmd() -> clap::Command {
     clap::Command::new("license")

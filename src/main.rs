@@ -1,6 +1,6 @@
 use crate::config::{Config, get_cfg};
 use crate::license::License;
-//use crate::readme::get_cmd;
+use crate::readme::get_cmd;
 use clap::Command;
 
 mod license;
