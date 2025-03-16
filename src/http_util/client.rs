@@ -6,6 +6,7 @@ use hyper::body::Bytes;
 use hyper_util::rt::TokioIo;
 
 pub trait SdkClient {
+    fn do(&self, url: &str) -> Result<(), String>;
     fn get(&self, url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }
 
@@ -22,6 +23,15 @@ impl SdkClient for HttpClient {
 
     // TODO: common entrypoint `do` with param `url` and `op` enum (get,post,...) in which
     // all pre-parsing and flight-checks are done
+    //
+
+    async fn do(&self, url: &str) -> Result<(), String> {
+        let runtime = tokio::runtime::Runtime::new().map_err(|e| format!("Failed to create HTTP client runtime: {}", e))?;
+
+        runtime.block_on(async {
+            get(url)
+        })
+    }
 
     async fn get(&self, url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 

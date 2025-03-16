@@ -20,7 +20,7 @@ impl LicenseManager {
         }
     }
     pub async fn download_resource(&self, url: &str) -> Result<String, String> {
-        match self.http_client.get(url) {
+        match self.http_client.do(url) {
             Ok(_) => Ok(String::from("Downloaded successfully")),
             Err(e) => Err(e.to_string())
         }
