@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
 use std::path::PathBuf;
 use serde::Serialize;
-use crate::http_util::client::SdkClient;
+use crate::http_util::client::HttpClient;
 //use http_body_util::{Empty, BodyExt};
 //use tokio::net::TcpStream;
 //use tokio::io::{self, AsyncWriteExt as _};
@@ -10,17 +10,17 @@ use crate::http_util::client::SdkClient;
 //use hyper_util::rt::TokioIo;
 
 pub struct LicenseManager {
-    http_client: Box<dyn SdkClient>,
+    http_client: HttpClient,
 }
 
 impl LicenseManager {
-    pub fn new(http_client: Box<dyn SdkClient>) -> Self {
+    pub fn new(http_client: HttpClient) -> Self {
         LicenseManager {
             http_client
         }
     }
-    pub async fn download_resource(&self, url: &str) -> Result<String, String> {
-        match self.http_client.do(url) {
+    pub async fn download_resource(&self, url: String) -> Result<String, String> {
+        match self.http_client.exec(url) {
             Ok(_) => Ok(String::from("Downloaded successfully")),
             Err(e) => Err(e.to_string())
         }

@@ -26,8 +26,8 @@ fn main() {
 
     let cfg = get_cfg().expect("config required");
 
-    let http_client = Box::new(HttpClient::new());
-    let license_service = LicenseManager { http_client };
+    let http_client = HttpClient::new();
+    let license_service = LicenseManager::new(http_client);
 
     let matches = cli().get_matches();
 

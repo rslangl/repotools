@@ -1,3 +1,5 @@
+use std::pin::Pin;
+use std::future::Future;
 use http_body_util::{Empty, BodyExt};
 use tokio::net::TcpStream;
 use tokio::io::{self, AsyncWriteExt as _};
@@ -5,62 +7,51 @@ use hyper::Request;
 use hyper::body::Bytes;
 use hyper_util::rt::TokioIo;
 
-pub trait SdkClient {
-    fn do(&self, url: &str) -> Result<(), String>;
-    fn get(&self, url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
-}
+//pub trait SdkClient {
+//    fn exec(&self, url: &str) -> Result<(), String>;
+//  fn get(&self, url: &str) -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>>>;
+//}
 
 pub struct HttpClient;
 
+//impl HttpClient {
+//
+//    pub fn new() -> Self {
+//        HttpClient
+//    }
+//}
+//
+//impl SdkClient for HttpClient {
 impl HttpClient {
 
     pub fn new() -> Self {
         HttpClient
     }
-}
 
-impl SdkClient for HttpClient {
-
-    // TODO: common entrypoint `do` with param `url` and `op` enum (get,post,...) in which
+    // TODO: common entrypoint `exec` with param `url` and `op` enum (get,post,...) in which
     // all pre-parsing and flight-checks are done
     //
 
-    async fn do(&self, url: &str) -> Result<(), String> {
+    pub fn exec(&self, url: String) -> Result<(), String> {
         let runtime = tokio::runtime::Runtime::new().map_err(|e| format!("Failed to create HTTP client runtime: {}", e))?;
 
         runtime.block_on(async {
-            get(url)
+            let _ = self.get(url);
+            Ok(())
         })
     }
 
-    async fn get(&self, url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    async fn get(&self, url: String) -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>>> {
 
-        let uri = url.parse::<hyper::Uri>()?; //{
-        //    Ok(u) => u,
-        //    Err(e) => {
-        //        return Err(format!("Could not parse URL '{}': {}", url, e));
-        //    }
-        //};
-        //
+        Box::pin(async move {
+        let uri = url.parse::<hyper::Uri>().map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
         let host = uri.host().expect("URI has no host");
         let port = uri.port_u16().unwrap_or(80);
 
-        let stream = TcpStream::connect(format!("{}:{}", host, port)).await?;// {
-        //    Ok(s) => s,
-        //    Err(e) => {
-        //        return Err(format!("Could not connect to host '{}': {}", host, e));
-        //    }
-        //};
-        //
+        let stream = TcpStream::connect(format!("{}:{}", host, port)).await?;
         let io = TokioIo::new(stream);
 
-        let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?; // {
-        //    Ok((s, c)) => (s, c),
-        //    Err(e) => {
-        //        return Err(format!("Could not establish handshake: {}", e));
-        //    }
-        //};
-        //
+        let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
         tokio::task::spawn(async move {
             if let Err(err) = conn.await {
                 println!("Connection failed: {:?}", err);
@@ -73,44 +64,22 @@ impl SdkClient for HttpClient {
         let req = Request::builder()
             .uri(path)
             .header(hyper::header::HOST, authority.as_str())
-            .body(Empty::<Bytes>::new())?;// {
-            //Ok(r) => r,
-            //Err(e) => {
-            //    return Err(format!("Could not send request: {}", e));
-            //}
+            .body(Empty::<Bytes>::new())?;
 
-        //};
+        let mut res =sender.send_request(req).await?;
 
-        let mut res =sender.send_request(req).await?;// {
-        //    Ok(r) => r,
-        //    Err(e) => {
-        //        return Err(format!("Error occurred while receiving response: {}", e));
-        //    }
-        //};
-        //
         println!("Response: {}", res.status());
         println!("Headers: {:#?}\n", res.headers());
 
         while let Some(next) = res.frame().await {
-            let frame = next?;// {
-            //    Ok(f) => f,
-            //    Err(e) => {
-            //        return Err(format!("{}", e));
-            //    }
-            //};
+            let frame = next?; 
             if let Some(chunk) = frame.data_ref() {
-                io::stdout().write_all(chunk).await?;// {
-            //        Ok(c) => c,
-            //        Err(e) => {
-            //            return Err(format!("{}", e));
-            //        }
-            //    };
+                io::stdout().write_all(chunk).await?;
             }
         }
 
         Ok(())
+        })
     }
-
 }
-
 
