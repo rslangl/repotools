@@ -1,11 +1,13 @@
 use crate::config::{Config, get_cfg};
-use crate::license::License;
+use crate::license::{License, LicenseManager};
 use crate::readme::get_cmd;
+use crate::http_util::client::HttpClient;
 use clap::Command;
 
 mod license;
 mod readme;
 mod config;
+mod http_util;
 
 fn cli() -> Command {
     Command::new("")
@@ -24,12 +26,14 @@ fn main() {
 
     let cfg = get_cfg().expect("config required");
 
+    let http_client = HttpClient::new();
+    let license_service = LicenseManager::new(http_client);
+
     let matches = cli().get_matches();
 
     match matches.subcommand() {
         Some(("license", sub_matches)) => {
             println!("license: {}", sub_matches.get_one::<String>("LICENSE").expect("required"));
-            //License::init(cfg);
         },
         Some(("readme", sub_matches)) => {
             println!("readme: {}", sub_matches.get_one::<String>("PATH").expect("required"));
