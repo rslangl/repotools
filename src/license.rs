@@ -2,12 +2,6 @@ use clap::{Arg, Command};
 use std::path::PathBuf;
 use serde::Serialize;
 use crate::http_util::client::HttpClient;
-//use http_body_util::{Empty, BodyExt};
-//use tokio::net::TcpStream;
-//use tokio::io::{self, AsyncWriteExt as _};
-//use hyper::Request;
-//use hyper::body::Bytes;
-//use hyper_util::rt::TokioIo;
 
 pub struct LicenseManager {
     http_client: HttpClient,

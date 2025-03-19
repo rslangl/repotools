@@ -7,21 +7,8 @@ use hyper::Request;
 use hyper::body::Bytes;
 use hyper_util::rt::TokioIo;
 
-//pub trait SdkClient {
-//    fn exec(&self, url: &str) -> Result<(), String>;
-//  fn get(&self, url: &str) -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>>>>;
-//}
-
 pub struct HttpClient;
 
-//impl HttpClient {
-//
-//    pub fn new() -> Self {
-//        HttpClient
-//    }
-//}
-//
-//impl SdkClient for HttpClient {
 impl HttpClient {
 
     pub fn new() -> Self {
