@@ -8,9 +8,9 @@ pub struct LicenseManager {
 }
 
 impl LicenseManager {
-    pub fn new(http_client: HttpClient) -> Self {
+    pub fn new() -> Self {
         LicenseManager {
-            http_client
+            http_client: HttpClient::new()
         }
     }
     pub async fn download_resource(&self, url: String) -> Result<String, String> {
