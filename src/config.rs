@@ -18,7 +18,7 @@ impl Config {
 
         // TODO: add defaults to license_management crate
         let licenses = vec![License::new(
-            &data_dir.join("MIT"), 
+            data.join("MIT").to_str().unwrap(),
             "MIT", 
             "https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0")];
 
@@ -29,7 +29,7 @@ impl Config {
             licenses: licenses,
         }
     }
-    
+
     pub fn data_dir(&self) -> PathBuf {
         self.data_dir.clone()
     }
@@ -51,9 +51,10 @@ pub fn get_cfg() -> Result<Config, String> {
 
     let cfg_path = match base.place_config_file(PathBuf::from("config")) {
         Ok(path) => {
-            //let data_path = base.get_data_home().join("repotools");
+            let data_dir = base.get_data_home().join("repotools");
+            let cfg_default = Config::default(path.clone(), data_dir);
             if !path.exists() {
-                fs::write(path, toml::to_string(&Config::default(path, base.get_data_home().join("repotools"))).unwrap()).unwrap();//.expect("Failed to write default config")
+                fs::write(path.clone(), toml::to_string(&cfg_default).unwrap()).unwrap();//.expect("Failed to write default config")
             }
             path
         },

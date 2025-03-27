@@ -1,6 +1,6 @@
 use clap::{Arg, Command};
 use std::path::PathBuf;
-use serde::Serialize;
+use serde::{Serialize,Deserialize};
 use crate::http_util::client::HttpClient;
 
 pub struct LicenseManager {
@@ -21,7 +21,7 @@ impl LicenseManager {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize,Deserialize)]
 pub struct License {
     name: String,  
     file_path: PathBuf,
