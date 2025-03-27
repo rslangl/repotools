@@ -45,8 +45,7 @@ pub fn get_cfg() -> Result<Config, String> {    // TODO: use io::error::Error in
                 d
             }
             Err(e) => {
-                println!("Failed to create data directory: {}", e);
-                PathBuf::new()
+                return Err(format!("Failed to create data directory: {}", e))
             }
         };
 
@@ -56,8 +55,7 @@ pub fn get_cfg() -> Result<Config, String> {    // TODO: use io::error::Error in
                 c
             },
             Err(e) => {
-                println!("Failed to create config directory: {}", e);
-                PathBuf::new()
+                return Err(format!("Failed to create config directory: {}", e))
             }
         };
 
