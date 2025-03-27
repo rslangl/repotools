@@ -1,10 +1,11 @@
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use crate::license::License;
 
-#[derive(Serialize)]
+#[derive(Serialize,Deserialize)]
 pub struct Config {
     config_dir: PathBuf,
     data_dir: PathBuf,
@@ -13,16 +14,22 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(cfg: PathBuf, data: PathBuf, licenses: Vec<License>) -> Config {
+    pub fn default(cfg: PathBuf, data: PathBuf) -> Config {
+
+        // TODO: add defaults to license_management crate
+        let licenses = vec![License::new(
+            &data_dir.join("MIT"), 
+            "MIT", 
+            "https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0")];
+
         Config{
             config_dir: cfg,
             data_dir: data,
             auto_fetch: true,
             licenses: licenses,
-
         }
     }
-
+    
     pub fn data_dir(&self) -> PathBuf {
         self.data_dir.clone()
     }
@@ -32,51 +39,40 @@ impl Config {
     }
 }
 
-pub fn get_cfg() -> Result<Config, String> {    // TODO: use io::error::Error instead to avoid
-                                                // mapping
+pub fn get_cfg() -> Result<Config, String> {
 
-    let base_dirs = xdg::BaseDirectories::with_prefix("repotools");
+    let base = match xdg::BaseDirectories::with_prefix("repotools") {
+        Ok(b) => b,
+        Err(e) => {
+            return Err(format!("Failed to get application base directory"))
+        }
+    };
 
-    if let Ok(base_dirs) = base_dirs {
 
-        let data_dir = match base_dirs.create_data_directory("data") {
-            Ok(d) => { 
-                println!("Data directory created at: {:?}", d);
-                d
+    let cfg_path = match base.place_config_file(PathBuf::from("config")) {
+        Ok(path) => {
+            //let data_path = base.get_data_home().join("repotools");
+            if !path.exists() {
+                fs::write(path, toml::to_string(&Config::default(path, base.get_data_home().join("repotools"))).unwrap()).unwrap();//.expect("Failed to write default config")
             }
-            Err(e) => {
-                return Err(format!("Failed to create data directory: {}", e))
-            }
-        };
+            path
+        },
+        Err(e) => {
+            return Err(format!("Failed to create config file"))
+        }
+    };
 
-        let cfg_dir = match base_dirs.create_config_directory("config") {
-            Ok(c) => {
-                println!("Config directory created at: {:?}", c);
-                c
-            },
-            Err(e) => {
-                return Err(format!("Failed to create config directory: {}", e))
-            }
-        };
+    let config = match fs::read_to_string(cfg_path) {
+        Ok(c) => {
+            let cfg: Config = toml::from_str(&c).unwrap();
+            cfg
+        },
+        Err(e) => {
+            return Err(format!("Failed to parse config file"))
+        }
+    };
 
-        let licenses = vec![License::new(
-            &data_dir.to_str().unwrap(), 
-            "MIT", 
-            "https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0")];
+    //println!("{}", config);
 
-        let config = Config::new(cfg_dir.clone(), data_dir, licenses);
-        let toml = toml::to_string(&config).unwrap();
-
-        let mut config_file = File::create(cfg_dir.join("config").to_str().unwrap()).map_err(|e| e.to_string())?;
-        let _ = config_file.write_all(toml::to_string(&config).unwrap().as_bytes());
-
-        println!("{}", toml);
-
-        Ok(config)
-
-    } else {
-        eprintln!("Failed to get base directories");
-        Err("Failed to get base directories".to_string())
-    }
-    //Ok(Config::new(base_dirs.config_dir().unwrap(), base_dirs.data_dir().unwrap()))
+    Ok(config)
 }
