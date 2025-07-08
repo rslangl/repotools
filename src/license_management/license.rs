@@ -1,31 +1,39 @@
 use clap::{Arg, Command};
 use std::path::PathBuf;
-use lazy_static::lazy_static;
+use serde::{Serialize,Deserialize};
+use crate::http_util::client::HttpClient;
 
-lazy_static! {
-    static ref LICENSES: Option<Vec<License>> = {
-        Some(vec![
-            License::new("MIT"),
-            License::new("GPLv3")
-        ])
-    };
+pub struct LicenseManager {
+    http_client: HttpClient,
 }
 
-#[derive(Clone)]
-struct License {
-    name: String,
-    auto_fetch: bool,
+impl LicenseManager {
+    pub fn new() -> Self {
+        LicenseManager {
+            http_client: HttpClient::new()
+        }
+    }
+    pub async fn download_resource(&self, url: String) -> Result<String, String> {
+        match self.http_client.exec(url) {
+            Ok(_) => Ok(String::from("Downloaded successfully")),
+            Err(e) => Err(e.to_string())
+        }
+    }
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct License {
+    name: String,  
     file_path: PathBuf,
     remote_url: String,
 }
 
 impl License {
-    fn new(name: &str) -> License {
+    pub fn new(path: &str, name: &str, url: &str) -> License {
         License {
             name: String::from(name),
-            auto_fetch: true,
-            file_path: PathBuf::from(name),
-            remote_url: String::from(name)
+            file_path: PathBuf::from(path).join(name),
+            remote_url: String::from(url)
         }
     }
 }
@@ -34,7 +42,7 @@ pub fn get_cmd() -> clap::Command {
     clap::Command::new("license")
         .about("license")
         .arg(
-            Arg::new("name")
+            Arg::new("LICENSE")
             .required(true),
         )
         .arg_required_else_help(true)

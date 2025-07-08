@@ -1,7 +1,14 @@
-use clap::{arg, Command};
+mod license_management;
+mod readme_management;
+mod http_util;
 
-mod license;
-mod readme;
+mod config;
+
+use crate::license::LicenseManager;
+use crate::license_management::license;
+use crate::readme_management::readme;
+
+use clap::Command;
 
 fn cli() -> Command {
     Command::new("")
@@ -17,6 +24,11 @@ fn cli() -> Command {
 }
 
 fn main() {
+
+    let cfg = config::get_cfg().expect("config required");
+
+    let license_service = LicenseManager::new();
+
     let matches = cli().get_matches();
 
     match matches.subcommand() {
