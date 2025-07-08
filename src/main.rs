@@ -20,13 +20,21 @@ fn cli() -> Command {
 
 fn main() {
 
-    //let cfg = config::get_cfg().expect("config required");
-    let settings = Config::builder()
-        .add_source(config::File::with_name("repotools"))
-        .build()
-        .unwrap();
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("repotools");
+    let config_file = xdg_dirs.find_config_file("config.toml").unwrap();
 
-    let license_service = LicenseManager::new();
+    let config_builder = Config::builder()
+        .add_source(config::File::with_name(config_file.to_str().expect("Could not find config file")));
+
+    let config = match config_builder.build() {
+        Ok(config) => config,
+        Err(err) => {
+            eprintln!("Error loading config file: {}", err);
+            std::process::exit(1);
+        }
+    };
+
+    let license_mgmt = LicenseManager::new();
 
     let matches = cli().get_matches();
 

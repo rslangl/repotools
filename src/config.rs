@@ -7,8 +7,6 @@ use crate::mgmt_license::License;
 
 #[derive(serde_derive::Deserialize, Clone, Debug)]
 pub struct Config {
-    config_dir: PathBuf,
-    data_dir: PathBuf,
     auto_fetch: bool,
     licenses: Vec<License>,
 }
