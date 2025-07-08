@@ -1,7 +1,7 @@
 use clap::{Arg, Command};
 use std::path::PathBuf;
 use serde::{Serialize,Deserialize};
-use crate::http_util::client::HttpClient;
+use crate::http_client::HttpClient;
 
 pub struct LicenseManager {
     http_client: HttpClient,

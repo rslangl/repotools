@@ -1,14 +1,7 @@
-mod license_management;
-mod readme_management;
-mod http_util;
-
-mod config;
-
-use crate::license::LicenseManager;
-use crate::license_management::license;
-use crate::readme_management::readme;
-
 use clap::Command;
+
+use repotools::mgmt_license::{self, LicenseManager};
+use repotools::mgmt_readme;
 
 fn cli() -> Command {
     Command::new("")
@@ -16,16 +9,16 @@ fn cli() -> Command {
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(
-            license::get_cmd()
+            mgmt_license::get_cmd()
         )
         .subcommand(
-            readme::get_cmd()
+            mgmt_readme::get_cmd()
         )
 }
 
 fn main() {
 
-    let cfg = config::get_cfg().expect("config required");
+    //let cfg = config::get_cfg().expect("config required");
 
     let license_service = LicenseManager::new();
 
