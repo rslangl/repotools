@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use crate::mgmt_license::License;
 
-#[derive(Serialize,Deserialize)]
+#[derive(serde_derive::Deserialize, Clone, Debug)]
 pub struct Config {
     config_dir: PathBuf,
     data_dir: PathBuf,

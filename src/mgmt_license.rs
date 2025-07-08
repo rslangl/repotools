@@ -21,7 +21,7 @@ impl LicenseManager {
     }
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Debug,Clone)]
 pub struct License {
     name: String,  
     file_path: PathBuf,
