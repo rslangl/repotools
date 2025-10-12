@@ -1,21 +1,17 @@
 //! commands/docs.rs
 
+use clap::Args;
+
 #[derive(Args)]
 pub struct DocsArgs {
-    #[arg(long, value_delimiter = ',')]
+    #[arg(long)]
     pub name: String,
 
     #[arg(long)]
     pub overwrite: bool,
 }
 
-pub fn handle(args: &DocsArgs) {
-
-    if let Some(name) = &args.name {
-        println!("Docs: {}", name);
-    }
-
-    if let Some(overwrite) = &args.name {
-        println!("Overwrite: {}", overwrite);
-    }
+pub fn handle(args: DocsArgs) {
+    println!("Docs: {}", &args.name);
+    println!("Overwrite: {}", &args.overwrite);
 }

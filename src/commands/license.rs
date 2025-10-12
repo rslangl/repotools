@@ -1,5 +1,7 @@
 //! commands/license.rs
 
+use clap::Args;
+
 #[derive(Args)]
 pub struct LicenseArgs {
     #[arg(long)]
@@ -9,15 +11,10 @@ pub struct LicenseArgs {
     pub inline: bool,
 }
 
-pub fn handle(args: &LicenseArgs) {
+pub fn handle(args: LicenseArgs) {
 
-    if let Some(name) = &args.name {
-        println!("License: {}", name);
-    }
-
-    if let Some(inline) = &args.inline {
-        println!("Inline: {}", inline);
-    }
+    println!("License: {}", &args.name);
+    println!("Inline: {}", &args.inline);
 }
 
 // use clap::{Arg, Command};

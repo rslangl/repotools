@@ -1,5 +1,7 @@
 mod cli;
+mod commands;
 
+use clap::Parser;
 use cli::{Cli, Command};
 
 fn main() {
@@ -20,10 +22,9 @@ fn main() {
     
     let cli = Cli::parse();
 
-    match &cli.command {
-        Command::License(args) => commands::handle(args),   // for global args, add
-                                                                            // &cli.global
-        Command::Docs(args) => commands::handle(args),
-        Command::Linter(args) => commands::handle(args),
+    match cli.command {
+        Command::Docs(args) => commands::docs::handle(args),
+        Command::License(args) => commands::license::handle(args),   // for global args, add &cli.global
+        Command::Linter(args) => commands::linter::handle(args),
     }
 }

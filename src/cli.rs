@@ -1,14 +1,12 @@
-//! cli.rs
+//! src/cli.rs
 
 use clap::{Parser, Subcommand};
-
-pub mod commands;
+use crate::commands::{DocsArgs, GlobalOpts, LicenseArgs, LinterArgs};
 
 #[derive(Parser)]
-#[command(name = "repotools", author, version)]
 pub struct Cli {
     #[command(flatten)]
-    pub global: commands::GlobalOpts,
+    pub global: GlobalOpts,
 
     #[command(subcommand)]
     pub command: Command,
@@ -16,7 +14,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    License(commands::license::LicenseArgs),
-    Docs(commands::docs::DocsArgs),
-    Linter(commands::linter::LinterArgs),
+    Docs(DocsArgs),
+    License(LicenseArgs),
+    Linter(LinterArgs),
 }

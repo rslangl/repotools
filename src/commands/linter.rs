@@ -1,21 +1,18 @@
 //! commands/linter.rs
 
+use clap::Args;
+
 #[derive(Args)]
 pub struct LinterArgs {
     #[arg(long, value_delimiter = ',')]
-    pub name: String,
+    pub name: Vec<String>,
 
     #[arg(long)]
     pub overwrite: bool,
 }
 
-pub fn handle(args: &LinterArgs) {
+pub fn handle(args: LinterArgs) {
 
-    if let Some(name) = &args.name {
-        println!("Linter: {}", name);
-    }
-
-    if let Some(overwrite) = &args.overwrite {
-        println!("Overwrite: {}", overwrite);
-    }
+    println!("Linter: {:?}", &args.name);
+    println!("Overwrite: {}", &args.overwrite);
 }
