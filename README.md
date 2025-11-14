@@ -1,5 +1,13 @@
 # repotools
 
+## Development
+
+On NixOS, use the accompanying flake:
+
+```shell
+nix develop .#system
+```
+
 ## TODO
 
 * Config management: [config](https://docs.rs/config/latest/config/index.html), [xdg](https://docs.rs/xdg/latest/xdg/)
