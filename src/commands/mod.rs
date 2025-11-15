@@ -1,12 +1,8 @@
 //! src/commands/mod.rs
 
-pub mod docs;
-pub mod license;
-pub mod linter;
+pub mod init_project;
 
-pub use docs::{DocsArgs, handle as docs_handle};
-pub use license::{LicenseArgs, handle as license_handle};
-pub use linter::{LinterArgs, handle as linter_handle};
+pub use init_project::{InitProjectArgs, handle as init_project_handler};
 
 use clap::Args;
 
