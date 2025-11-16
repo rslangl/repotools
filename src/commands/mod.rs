@@ -8,6 +8,7 @@ use clap::Args;
 
 #[derive(Args)]
 pub struct GlobalOpts {
-    #[arg(long, name = "config", default_value = "~/.config/repotools/config")]
-    pub config_path: String,
+    #[arg(long, name = "config")]
+    pub config_path: Option<String>,
+    // TODO: add data/cache path
 }
