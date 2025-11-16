@@ -9,9 +9,9 @@ fn main() {
 
     let cli = Cli::parse();
 
-    let config = app_config::get_config(std::path::PathBuf::from(cli.global.config_path));
+    let config = app_config::get_config(cli.global.config_path).expect("Could not load app config");
 
     match cli.command {
-        Command::InitProject(args) => commands::init_project::handle(args) // for global args, add &cli.global
+        Command::InitProject(args) => commands::init_project::handle(args, config) // for global args, add &cli.global
     }
 }
