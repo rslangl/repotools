@@ -3,6 +3,8 @@
 use std::{collections::HashMap, fs, io::Write, path::PathBuf};
 
 use config::FileFormat;
+use reqwest::Url;
+use serde::Deserialize;
 use tera::{Tera, Context};
 
 const DEFAULT_CONFIG: &'static str = "
@@ -14,7 +16,20 @@ file_path=\"{{ data_dir }}MIT\"
 remote_src=\"https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0\"
 ";
 
-pub fn get_config(file_path: Option<String>) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+#[derive(Deserialize)]
+struct Config {
+    auto_fetch: bool,
+    licenses: Vec<License>
+}
+
+#[derive(Deserialize)]
+struct License {
+    name: String,
+    file_path: PathBuf,
+    remote_src: Url
+}
+
+pub fn get_config(file_path: Option<String>) -> Result<HashMap<String, toml::Value>, Box<dyn std::error::Error>> {
 
     let config_path = match file_path {
         Some(path) => PathBuf::from(path),
@@ -37,7 +52,7 @@ pub fn get_config(file_path: Option<String>) -> Result<HashMap<String, String>, 
     let config = config::Config::builder()
         .add_source(config::File::new(config_path.to_str().unwrap(), FileFormat::Toml))
         .build()?
-        .try_deserialize::<HashMap<String, String>>()?;
+        .try_deserialize::<HashMap<String, toml::Value>>()?;
 
     Ok(config)
 }
