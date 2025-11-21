@@ -12,7 +12,7 @@ pub struct InitProjectArgs {
     pub profile: Option<String>
 }
 
-pub fn handle(args: InitProjectArgs, config: HashMap<String, String>) {
+pub fn handle(args: InitProjectArgs, config: HashMap<String, toml::Value>) {
 
     // TODO: iterate list over registered profiles in config file and determine whether the passed
     // one exists. If not, terminate. If empty, use "default"
