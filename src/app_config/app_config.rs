@@ -14,12 +14,35 @@ auto_fetch=true
 name=\"MIT\"
 file_path=\"{{ data_dir }}MIT\"
 remote_src=\"https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0\"
+
+[[licenses]]
+name=\"LGPL\"
+file_path=\"{{ data_dir }}LGPL\"
+remote_src=\"https://raw.githubusercontent.com/git/git/refs/heads/master/LGPL-2.1\"
+
+[[templates]]
+name=\"maven\"
+profile=\"default\"
+template_files=\"{{ data_dir }}maven/default/\"
+";
+
+const DEFAULT_TEMPLATE_MAVEN: &'static str = "
+    <project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+    xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>{{ mvn_group_id }}</groupId>
+    <artifactId>{{ mvn_app_name }}</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    </project>
 ";
 
 #[derive(Deserialize)]
 struct Config {
     auto_fetch: bool,
-    licenses: Vec<License>
+    licenses: Vec<License>,
+    templates: Vec<ProjectTemplate>,
 }
 
 #[derive(Deserialize)]
@@ -27,6 +50,13 @@ struct License {
     name: String,
     file_path: PathBuf,
     remote_src: Url
+}
+
+#[derive(Deserialize)]
+pub struct ProjectTemplate {
+    pub name: String,
+    pub profile: String,
+    pub template_files: PathBuf
 }
 
 pub fn get_config(file_path: Option<String>) -> Result<HashMap<String, toml::Value>, Box<dyn std::error::Error>> {
