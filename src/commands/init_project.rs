@@ -26,20 +26,16 @@ pub fn handle(args: InitProjectArgs, config: HashMap<String, toml::Value>) {
         }
     }).expect("Could not find template");
 
-    println!("name: {}", template.name);
-    // println!("profile: {}", template.profile);
-    // println!("files path: {}", template.template_files.display());
+    for template_file in fs::read_dir(template.template_files.as_path()).expect("Could not read files from template files path") {
+        let source_template = template_file.unwrap();
+        let source_file_name = source_template.file_name();
+        let source_file_path = source_template.path();
 
-for template_file in fs::read_dir(template.template_files.as_path()).expect("Could not read files from template files path") {
-    let source_template = template_file.unwrap();
-    let source_file_name = source_template.file_name();
-    let source_file_path = source_template.path();
+        let mut source = File::open(source_file_path).unwrap();
+        let mut content = String::new();
+        source.read_to_string(&mut content).unwrap();
 
-    let mut source = File::open(source_file_path).unwrap();
-    let mut content = String::new();
-    source.read_to_string(&mut content).unwrap();
-
-    let mut target_file = File::create(source_file_name).unwrap();
-    target_file.write_all(content.as_bytes()).unwrap();
-}
+        let mut target_file = File::create(source_file_name).unwrap();
+        target_file.write_all(content.as_bytes()).unwrap();
+    }
 }
