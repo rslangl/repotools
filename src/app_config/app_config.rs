@@ -31,8 +31,8 @@ const DEFAULT_TEMPLATE_MAVEN: &'static str = "
     xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>{{ mvn_group_id }}</groupId>
-    <artifactId>{{ mvn_app_name }}</artifactId>
+    <groupId>{{ group_id }}</groupId>
+    <artifactId>{{ artifact_id }}</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     </project>
