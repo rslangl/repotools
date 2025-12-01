@@ -3,6 +3,7 @@
 use std::{collections::HashMap, fs::{self, File, ReadDir}, io::{Read, Write}, str::FromStr};
 
 use clap::{Args, Error};
+use tera::Tera;
 
 use crate::app_config::app_config::{AppConfig, ProjectTemplate};
 
@@ -85,10 +86,15 @@ impl ProjectStrategy for MavenProject {
                 let mut content = String::new();
                 source.read_to_string(&mut content).map_err(|e| e.to_string())?;
 
-                // TODO: use Tera to render template with group_id and artifact_id
+                let mut context = tera::Context::new();
+
+                context.insert("group_id", &self.group_id);
+                context.insert("artifact_id", &self.artifact_id);
+
+                let rendered = Tera::one_off(&content, &context, false).map_err(|e| e.to_string())?;
 
                 let mut target_file = File::create(name).map_err(|e| e.to_string())?;
-                target_file.write_all(content.as_bytes()).map_err(|e| e.to_string())?;
+                target_file.write_all(rendered.as_bytes()).map_err(|e| e.to_string())?;
             }
         }
         Ok(())
