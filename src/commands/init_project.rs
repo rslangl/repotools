@@ -4,7 +4,7 @@ use std::{collections::HashMap, fs::{self, File, ReadDir}, io::{Read, Write}};
 
 use clap::{Args, Error};
 
-use crate::app_config::app_config::ProjectTemplate;
+use crate::app_config::app_config::{AppConfig, ProjectTemplate};
 
 const PROJECT_TYPE_MAVEN: &'static str = "MAVEN";
 const PROJECT_TYPE_ANSIBLE: &'static str = "ANSIBLE";
@@ -76,16 +76,9 @@ impl ProjectFactory {
     }
 }
 
-pub fn handle(args: InitProjectArgs, config: HashMap<String, toml::Value>) -> Result<(), String> {
+pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
 
-    let serialized: &toml::Value = config.get("templates").ok_or("Could not find expected field 'templates'")?;
-
-    let templates: Vec<ProjectTemplate> = serialized
-        .clone()
-        .try_into()
-        .map_err(|e| format!("Could not deserialize list of templates from config file: {}", e.to_string()))?;
-
-    let template = templates.iter().find(|p| {
+    let template = config.templates.iter().find(|p| {
         if let Some(profile) = &args.profile {
             p.name == args.project_type && p.profile == *profile
         } else {
@@ -93,7 +86,7 @@ pub fn handle(args: InitProjectArgs, config: HashMap<String, toml::Value>) -> Re
         }
     }).ok_or("Could not find template".to_string())?;
 
-    if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str()) {//;//.map_err(|e| e.to_string())?;
+    if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str()) {
         if let Ok(read_dir) = fs::read_dir(template.template_files.as_path()) {
             project.write_templates(read_dir);
         };

@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, fs, io::Write, path::PathBuf};
 
-use config::FileFormat;
+use config::{Config, FileFormat};
 use reqwest::Url;
 use serde::Deserialize;
 use tera::{Tera, Context};
@@ -39,10 +39,10 @@ const DEFAULT_TEMPLATE_MAVEN: &'static str = "
 ";
 
 #[derive(Deserialize)]
-struct Config {
-    auto_fetch: bool,
-    licenses: Vec<License>,
-    templates: Vec<ProjectTemplate>,
+pub struct AppConfig {
+    pub auto_fetch: bool,
+    pub licenses: Vec<License>,
+    pub templates: Vec<ProjectTemplate>,
 }
 
 #[derive(Deserialize)]
@@ -59,7 +59,7 @@ pub struct ProjectTemplate {
     pub template_files: PathBuf
 }
 
-pub fn get_config(file_path: Option<String>) -> Result<HashMap<String, toml::Value>, Box<dyn std::error::Error>> {
+pub fn get_config(file_path: Option<String>) -> Result<AppConfig, Box<dyn std::error::Error>> {
 
     let config_path = match file_path {
         Some(path) => PathBuf::from(path),
@@ -79,10 +79,10 @@ pub fn get_config(file_path: Option<String>) -> Result<HashMap<String, toml::Val
         }
     };
 
-    let config = config::Config::builder()
+    let config = Config::builder()
         .add_source(config::File::new(config_path.to_str().unwrap(), FileFormat::Toml))
         .build()?
-        .try_deserialize::<HashMap<String, toml::Value>>()?;
+        .try_deserialize::<AppConfig>()?;
 
     Ok(config)
 }
