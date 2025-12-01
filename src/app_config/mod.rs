@@ -2,4 +2,4 @@
 
 pub mod app_config;
 
-pub use app_config::get_config;
+pub use app_config::{get_config, AppConfig};
