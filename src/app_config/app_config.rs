@@ -7,37 +7,6 @@ use reqwest::Url;
 use serde::Deserialize;
 use tera::{Tera, Context};
 
-const DEFAULT_CONFIG: &'static str = "
-auto_fetch=true
-
-[[licenses]]
-name=\"MIT\"
-file_path=\"{{ data_dir }}MIT\"
-remote_src=\"https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0\"
-
-[[licenses]]
-name=\"LGPL\"
-file_path=\"{{ data_dir }}LGPL\"
-remote_src=\"https://raw.githubusercontent.com/git/git/refs/heads/master/LGPL-2.1\"
-
-[[templates]]
-name=\"maven\"
-profile=\"default\"
-template_files=\"{{ data_dir }}maven/default/\"
-";
-
-const DEFAULT_TEMPLATE_MAVEN: &'static str = "
-    <project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
-    xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>{{ group_id }}</groupId>
-    <artifactId>{{ artifact_id }}</artifactId>
-    <version>1.0-SNAPSHOT</version>
-
-    </project>
-";
-
 #[derive(Deserialize)]
 pub struct AppConfig {
     pub auto_fetch: bool,
@@ -68,9 +37,10 @@ pub fn get_config(file_path: Option<String>) -> Result<AppConfig, Box<dyn std::e
             let path = xdg.place_config_file("config").expect("Could not create config directory");
 
             if !path.exists() {
+                let default_config = include_str!("../../assets/config.toml.j2");
                 let mut context = tera::Context::new();
                 context.insert("data_dir", &xdg.get_cache_home().expect("Could not get cache directory"));
-                let rendered = Tera::one_off(DEFAULT_CONFIG, &context, false).unwrap();
+                let rendered = Tera::one_off(default_config, &context, false).unwrap();
                 let mut f = fs::File::create(&path).unwrap();
                 f.write_all(rendered.as_bytes()).unwrap();
             }
