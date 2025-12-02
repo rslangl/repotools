@@ -42,7 +42,6 @@ pub struct InitProjectArgs {
 }
 
 trait ProjectStrategy {
-    //fn new(&self, settings: HashMap<String, String>) -> Result<Self, String>;
     fn write_templates(&self, read_dir: ReadDir) -> Result<(), String>;
 }
 
@@ -88,6 +87,7 @@ impl ProjectStrategy for MavenProject {
 
                 let mut context = tera::Context::new();
 
+                // TODO: only applies for pom.xml
                 context.insert("group_id", &self.group_id);
                 context.insert("artifact_id", &self.artifact_id);
 
@@ -101,13 +101,67 @@ impl ProjectStrategy for MavenProject {
     }
 }
 
-// struct AnsibleProject;
-//
-// // impl ProjectStrategy for AnsibleProject {
-//     fn write_templates(&self, read_dir: ReadDir) -> Result<(), String> {
-//         Ok(())
-//     }
-// }
+struct AnsibleProject {
+    // Host tuples are FQDN/hostnames and IP
+    hosts: Vec<String>,
+    roles: Vec<String>
+}
+
+impl AnsibleProject {
+    fn new(settings: HashMap<String, String>) -> Self {
+
+        let hosts = settings
+            .get("hosts")
+            .cloned()
+            .unwrap()
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect();
+
+        let roles = settings
+            .get("roles")
+            .cloned()
+            .unwrap()
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect();
+
+        Self{
+            hosts: hosts,
+            roles: roles
+        }
+    }
+}
+
+impl ProjectStrategy for AnsibleProject {
+    fn write_templates(&self, read_dir: ReadDir) -> Result<(), String> {
+        for entry in read_dir {
+            println!("{:?}", entry);
+            if let Ok(entry) = entry {
+                let path = entry.path();
+                let name = entry.file_name();
+
+                if path.is_dir() {
+                    fs::create_dir(name);
+                } else {
+
+                let mut source = File::open(path).unwrap(); //map_err(|e| e.to_string())?;
+                let mut content = String::new();
+                source.read_to_string(&mut content).unwrap(); //map_err(|e| e.to_string())?;
+
+                let mut context = tera::Context::new();
+                context.insert("hosts", &self.hosts);
+                context.insert("roles", &self.roles);
+
+                let rendered = Tera::one_off(&content, &context, false).unwrap(); //map_err(|e| e.to_string())?;
+                let mut target_file = File::create(name).unwrap(); //map_err(|e| e.to_string())?;
+                target_file.write_all(rendered.as_bytes()).unwrap(); //map_err(|e| e.to_string())?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
 
 struct ProjectInitializer<T: ProjectStrategy> {
     initialize_strategy: T,
@@ -129,7 +183,7 @@ impl ProjectFactory {
     fn new(project_type: &str, settings: HashMap<String, String>) -> Result<Box<dyn ProjectStrategy>, String> {
         match project_type {
             PROJECT_TYPE_MAVEN => Ok(Box::new(MavenProject::new(settings))),
-            // PROJECT_TYPE_ANSIBLE => Ok(Box::new(AnsibleProject)),
+            PROJECT_TYPE_ANSIBLE => Ok(Box::new(AnsibleProject::new(settings))),
             _ => Err("Unknown strategy".to_string()),
         }
     }
