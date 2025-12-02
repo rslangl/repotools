@@ -1,0 +1,7 @@
+# inventory.yaml
+---
+targets:
+  hosts:
+    {% for host in hosts %}:
+      ansible_host: {{ host }}
+    {% endfor %}
