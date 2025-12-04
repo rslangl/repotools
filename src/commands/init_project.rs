@@ -42,7 +42,13 @@ pub struct InitProjectArgs {
     pub settings: Option<Vec<ProjectSetting>>
 }
 
+/**
+Rendering templates with `Tera` require a value that implements `serde::Serializer`,
+and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
+enum as the contained value
+*/
 #[derive(Serialize)]
+#[serde(untagged)]
 enum Val {
     Str(String),
     Num(i64),
@@ -174,14 +180,14 @@ fn render(content: String, properties: &HashMap<String, Val>) -> Vec<u8> { // TO
     let mut context = tera::Context::new();
 
     for (key, val) in properties.iter() {
-        match val {
-            Val::Str(s) => context.insert(key.as_str(), s),
-            Val::Bool(b) => context.insert(key.as_str(), b),
-            Val::Seq(xs) => context.insert(key.as_str(), xs),
-            Val::Num(n) => context.insert(key.as_str(), n),
-            Val::Map(m) => context.insert(key.as_str(), m),
-        }
-        //context.insert(key.as_str(), val.as_str());
+        // match val {
+        //     Val::Str(s) => context.insert(key.as_str(), s),
+        //     Val::Bool(b) => context.insert(key.as_str(), b),
+        //     Val::Seq(xs) => context.insert(key.as_str(), xs),
+        //     Val::Num(n) => context.insert(key.as_str(), n),
+        //     Val::Map(m) => context.insert(key.as_str(), m),
+        // }
+        context.insert(key.as_str(), val);
     }
 
     let rendered = tera::Tera::one_off(&content, &context, false).unwrap();
