@@ -176,17 +176,10 @@ impl ProjectFactory {
     }
 }
 
-fn render(content: String, properties: &HashMap<String, Val>) -> Vec<u8> { // TODO: pass project-specific values
+fn render(content: String, properties: &HashMap<String, Val>) -> Vec<u8> {
     let mut context = tera::Context::new();
 
     for (key, val) in properties.iter() {
-        // match val {
-        //     Val::Str(s) => context.insert(key.as_str(), s),
-        //     Val::Bool(b) => context.insert(key.as_str(), b),
-        //     Val::Seq(xs) => context.insert(key.as_str(), xs),
-        //     Val::Num(n) => context.insert(key.as_str(), n),
-        //     Val::Map(m) => context.insert(key.as_str(), m),
-        // }
         context.insert(key.as_str(), val);
     }
 
