@@ -1,8 +1,9 @@
 //! commands/init_project.rs
 
-use std::{collections::HashMap, fs::{self, File, ReadDir}, io::{Read, Write}, str::FromStr};
+use std::{collections::HashMap, fs::{self, File, ReadDir}, io::{Read, Write}, path::{Path, PathBuf}, str::FromStr};
 
 use clap::{Args, Error};
+use serde::Serialize;
 use tera::Tera;
 
 use crate::app_config::app_config::{AppConfig, ProjectTemplate};
@@ -41,8 +42,17 @@ pub struct InitProjectArgs {
     pub settings: Option<Vec<ProjectSetting>>
 }
 
+#[derive(Serialize)]
+enum Val {
+    Str(String),
+    Num(i64),
+    Bool(bool),
+    Seq(Vec<Val>),
+    Map(HashMap<String, Val>),
+}
+
 trait ProjectStrategy {
-    fn write_templates(&self, read_dir: ReadDir) -> Result<(), String>;
+    fn write_templates(&self, source: &Path) -> Result<(), String>;
 }
 
 struct MavenProject {
@@ -71,32 +81,19 @@ impl MavenProject {
             artifact_id: artifact_id
         }
     }
+
+    fn get_properties(&self) -> HashMap<String, Val> {
+        let mut properties = HashMap::new();
+        properties.insert("group_id".to_string(), Val::Str(self.group_id.clone()));
+        properties.insert("artifact_id".to_string(), Val::Str(self.artifact_id.clone()));
+        properties
+    }
 }
 
 impl ProjectStrategy for MavenProject {
 
-    fn write_templates(&self, read_dir: ReadDir) -> Result<(), String> {
-        for entry in read_dir {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                let name = entry.file_name();
-
-                let mut source = File::open(path).map_err(|e| e.to_string())?;
-                let mut content = String::new();
-                source.read_to_string(&mut content).map_err(|e| e.to_string())?;
-
-                let mut context = tera::Context::new();
-
-                // TODO: only applies for pom.xml
-                context.insert("group_id", &self.group_id);
-                context.insert("artifact_id", &self.artifact_id);
-
-                let rendered = Tera::one_off(&content, &context, false).map_err(|e| e.to_string())?;
-
-                let mut target_file = File::create(name).map_err(|e| e.to_string())?;
-                target_file.write_all(rendered.as_bytes()).map_err(|e| e.to_string())?;
-            }
-        }
+    fn write_templates(&self, source: &Path) -> Result<(), String> {
+        create_files(&source, &source, &MavenProject::get_properties(self));
         Ok(())
     }
 }
@@ -131,34 +128,18 @@ impl AnsibleProject {
             roles: roles
         }
     }
+
+    fn get_properties(&self) -> HashMap<String, Val> {
+        let mut properties = HashMap::new();
+        properties.insert("roles".to_string(), Val::Seq(self.roles.clone().into_iter().map(Val::Str).collect()));
+        properties.insert("hosts".to_string(), Val::Seq(self.hosts.clone().into_iter().map(Val::Str).collect()));
+        properties
+    }
 }
 
 impl ProjectStrategy for AnsibleProject {
-    fn write_templates(&self, read_dir: ReadDir) -> Result<(), String> {
-        for entry in read_dir {
-            println!("{:?}", entry);
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                let name = entry.file_name();
-
-                if path.is_dir() {
-                    fs::create_dir(name);
-                } else {
-
-                let mut source = File::open(path).unwrap(); //map_err(|e| e.to_string())?;
-                let mut content = String::new();
-                source.read_to_string(&mut content).unwrap(); //map_err(|e| e.to_string())?;
-
-                let mut context = tera::Context::new();
-                context.insert("hosts", &self.hosts);
-                context.insert("roles", &self.roles);
-
-                let rendered = Tera::one_off(&content, &context, false).unwrap(); //map_err(|e| e.to_string())?;
-                let mut target_file = File::create(name).unwrap(); //map_err(|e| e.to_string())?;
-                target_file.write_all(rendered.as_bytes()).unwrap(); //map_err(|e| e.to_string())?;
-                }
-            }
-        }
+    fn write_templates(&self, source: &Path) -> Result<(), String> {
+        create_files(&source, &source, &AnsibleProject::get_properties(self));
         Ok(())
     }
 }
@@ -172,8 +153,8 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
         Self { initialize_strategy }
     }
 
-    fn initialize(&self, read_dir: ReadDir) -> Result<(), String> {
-        self.initialize_strategy.write_templates(read_dir)
+    fn initialize(&self, source: &Path) -> Result<(), String> {
+        self.initialize_strategy.write_templates(source)
     }
 }
 
@@ -186,6 +167,48 @@ impl ProjectFactory {
             PROJECT_TYPE_ANSIBLE => Ok(Box::new(AnsibleProject::new(settings))),
             _ => Err("Unknown strategy".to_string()),
         }
+    }
+}
+
+fn render(content: String, properties: &HashMap<String, Val>) -> Vec<u8> { // TODO: pass project-specific values
+    let mut context = tera::Context::new();
+
+    for (key, val) in properties.iter() {
+        match val {
+            Val::Str(s) => context.insert(key.as_str(), s),
+            Val::Bool(b) => context.insert(key.as_str(), b),
+            Val::Seq(xs) => context.insert(key.as_str(), xs),
+            Val::Num(n) => context.insert(key.as_str(), n),
+            Val::Map(m) => context.insert(key.as_str(), m),
+        }
+        //context.insert(key.as_str(), val.as_str());
+    }
+
+    let rendered = tera::Tera::one_off(&content, &context, false).unwrap();
+    rendered.as_bytes().to_vec()
+}
+
+fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) {
+    for entry in fs::read_dir(current).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        let relative_path = path.strip_prefix(root).unwrap();
+
+        if path.is_dir() {
+            create_files(root, &path, &properties);
+            continue;
+        }
+
+        let target_root = Path::new(".");   // TODO: using current dir for now
+        let target = target_root.join(relative_path);
+
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+
+        let content = fs::read_to_string(&path).unwrap();
+        let rendered = render(content, properties.clone());
+        fs::write(target, rendered).unwrap();
     }
 }
 
@@ -211,9 +234,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
     };
 
     if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
-        if let Ok(read_dir) = fs::read_dir(template.template_files.as_path()) {
-            project.write_templates(read_dir);
-        };
+        project.write_templates(template.template_files.as_path());
     }
 
     Ok(())
