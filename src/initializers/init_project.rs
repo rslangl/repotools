@@ -1,12 +1,16 @@
-//! commands/init_project.rs
+//! src/initializers/init_project.rs
 
-use std::{collections::HashMap, fs::{self, File, ReadDir}, io::{Read, Write}, path::{Path, PathBuf}, str::FromStr};
+use std::{
+    collections::HashMap, fs::self,
+    path::Path,
+    str::FromStr};
 
-use clap::{Args, Error};
+use clap::Args;
 use serde::Serialize;
-use tera::Tera;
 
-use crate::app_config::app_config::{AppConfig, ProjectTemplate};
+use crate::initializers::project_maven::MavenProject;
+use crate::initializers::project_ansible::AnsibleProject;
+use crate::app_config::app_config::AppConfig;
 
 const PROJECT_TYPE_MAVEN: &'static str = "MAVEN";
 const PROJECT_TYPE_ANSIBLE: &'static str = "ANSIBLE";
@@ -42,113 +46,6 @@ pub struct InitProjectArgs {
     pub settings: Option<Vec<ProjectSetting>>
 }
 
-/**
-Rendering templates with `Tera` require a value that implements `serde::Serializer`,
-and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
-enum as the contained value
-*/
-#[derive(Serialize)]
-#[serde(untagged)]
-enum Val {
-    Str(String),
-    Num(i64),
-    Bool(bool),
-    Seq(Vec<Val>),
-    Map(HashMap<String, Val>),
-}
-
-trait ProjectStrategy {
-    fn write_templates(&self, source: &Path) -> Result<(), String>;
-}
-
-struct MavenProject {
-    group_id: String,
-    artifact_id: String
-
-}
-
-impl MavenProject {
-    fn new(settings: HashMap<String, String>) -> Self {
-
-        let group_id = settings
-            .get("group_id")
-            .cloned()
-            .unwrap();
-            // .ok_or("Expected Maven setting `groupId`")?;
-
-        let artifact_id = settings
-            .get("artifact_id")
-            .cloned()
-            .unwrap();
-            // .ok_or("Expected Maven setting `artifactId`")?;
-
-        Self {
-            group_id: group_id,
-            artifact_id: artifact_id
-        }
-    }
-
-    fn get_properties(&self) -> HashMap<String, Val> {
-        let mut properties = HashMap::new();
-        properties.insert("group_id".to_string(), Val::Str(self.group_id.clone()));
-        properties.insert("artifact_id".to_string(), Val::Str(self.artifact_id.clone()));
-        properties
-    }
-}
-
-impl ProjectStrategy for MavenProject {
-
-    fn write_templates(&self, source: &Path) -> Result<(), String> {
-        create_files(&source, &source, &MavenProject::get_properties(self));
-        Ok(())
-    }
-}
-
-struct AnsibleProject {
-    // Host tuples are FQDN/hostnames and IP
-    hosts: Vec<String>,
-    roles: Vec<String>
-}
-
-impl AnsibleProject {
-    fn new(settings: HashMap<String, String>) -> Self {
-
-        let hosts = settings
-            .get("hosts")
-            .cloned()
-            .unwrap()
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
-
-        let roles = settings
-            .get("roles")
-            .cloned()
-            .unwrap()
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
-
-        Self{
-            hosts: hosts,
-            roles: roles
-        }
-    }
-
-    fn get_properties(&self) -> HashMap<String, Val> {
-        let mut properties = HashMap::new();
-        properties.insert("roles".to_string(), Val::Seq(self.roles.clone().into_iter().map(Val::Str).collect()));
-        properties.insert("hosts".to_string(), Val::Seq(self.hosts.clone().into_iter().map(Val::Str).collect()));
-        properties
-    }
-}
-
-impl ProjectStrategy for AnsibleProject {
-    fn write_templates(&self, source: &Path) -> Result<(), String> {
-        create_files(&source, &source, &AnsibleProject::get_properties(self));
-        Ok(())
-    }
-}
 
 struct ProjectInitializer<T: ProjectStrategy> {
     initialize_strategy: T,
@@ -162,6 +59,25 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
     fn initialize(&self, source: &Path) -> Result<(), String> {
         self.initialize_strategy.write_templates(source)
     }
+}
+
+/**
+Rendering templates with `Tera` require a value that implements `serde::Serializer`,
+and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
+enum as the contained value
+*/
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum Val {
+    Str(String),
+    Num(i64),
+    Bool(bool),
+    Seq(Vec<Val>),
+    Map(HashMap<String, Val>),
+}
+
+pub trait ProjectStrategy {
+    fn write_templates(&self, source: &Path) -> Result<(), String>;
 }
 
 struct ProjectFactory;
@@ -187,7 +103,7 @@ fn render(content: String, properties: &HashMap<String, Val>) -> Vec<u8> {
     rendered.as_bytes().to_vec()
 }
 
-fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) {
+pub fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) {
     for entry in fs::read_dir(current).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
@@ -206,7 +122,7 @@ fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) 
         }
 
         let content = fs::read_to_string(&path).unwrap();
-        let rendered = render(content, properties.clone());
+        let rendered = render(content, properties);
         fs::write(target, rendered).unwrap();
     }
 }
@@ -233,7 +149,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
     };
 
     if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
-        project.write_templates(template.template_files.as_path());
+        let _ = project.write_templates(template.template_files.as_path());
     }
 
     Ok(())

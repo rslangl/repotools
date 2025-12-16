@@ -1,7 +1,9 @@
-//! src/cli.rs
+//! src/cli/cli.rs
 
 use clap::{Parser, Subcommand};
-use crate::commands::{GlobalOpts, InitProjectArgs};
+use crate::initializers::InitProjectArgs;
+
+use clap::Args;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -19,3 +21,12 @@ pub enum Command {
     // TODO: add more subcommands as needed, e.g.
     // License: add or remove license, optional inlined
 }
+
+#[derive(Args)]
+pub struct GlobalOpts {
+    #[arg(long, name = "config")]
+    pub config_path: Option<String>,
+    // TODO: add data/cache path
+}
+
+

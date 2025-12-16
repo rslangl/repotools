@@ -1,11 +1,11 @@
-//! config/config.rs
+//! src/app_config/config.rs
 
-use std::{collections::HashMap, fs, io::Write, path::PathBuf};
+use std::{fs, io::Write, path::PathBuf};
 
 use config::{Config, FileFormat};
 use reqwest::Url;
 use serde::Deserialize;
-use tera::{Tera, Context};
+use tera::Tera;
 
 #[derive(Deserialize)]
 pub struct AppConfig {
@@ -14,6 +14,7 @@ pub struct AppConfig {
     pub templates: Vec<ProjectTemplate>,
 }
 
+// TODO: add other structs reflecting the contents of the resources found in src/resources
 #[derive(Deserialize)]
 struct License {
     name: String,
