@@ -1,18 +1,16 @@
 //! src/initializers/init_project.rs
 
 use std::{
-    collections::HashMap, fs::{self, File, ReadDir},
-    io::{Read, Write},
-    path::{Path, PathBuf},
+    collections::HashMap, fs::self,
+    path::Path,
     str::FromStr};
 
-use clap::{Args, Error};
+use clap::Args;
 use serde::Serialize;
-use tera::Tera;
 
 use crate::initializers::project_maven::MavenProject;
 use crate::initializers::project_ansible::AnsibleProject;
-use crate::app_config::app_config::{AppConfig, ProjectTemplate};
+use crate::app_config::app_config::AppConfig;
 
 const PROJECT_TYPE_MAVEN: &'static str = "MAVEN";
 const PROJECT_TYPE_ANSIBLE: &'static str = "ANSIBLE";
@@ -151,7 +149,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
     };
 
     if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
-        project.write_templates(template.template_files.as_path());
+        let _ = project.write_templates(template.template_files.as_path());
     }
 
     Ok(())
