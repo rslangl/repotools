@@ -1,4 +1,4 @@
-//! config/config.rs
+//! src/app_config/config.rs
 
 use std::{collections::HashMap, fs, io::Write, path::PathBuf};
 
