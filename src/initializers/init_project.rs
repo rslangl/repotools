@@ -8,8 +8,8 @@ use std::{
 use clap::Args;
 use serde::Serialize;
 
-use crate::initializers::project_maven::MavenProject;
-use crate::initializers::project_ansible::AnsibleProject;
+use crate::initializers::project_types::maven::MavenProject;
+use crate::initializers::project_types::ansible::AnsibleProject;
 use crate::app_config::app_config::AppConfig;
 
 const PROJECT_TYPE_MAVEN: &'static str = "MAVEN";
