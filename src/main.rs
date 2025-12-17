@@ -23,10 +23,10 @@ fn main() -> Result<(), AppError> {
 
     let cli = Cli::parse();
 
-    let config = app_config::get_config(cli.global.config_path)?; //.expect("Could not load app config");
+    let config = app_config::get_config(cli.global.config_path)?;
 
     match cli.command {
-        Command::InitProject(args) => init_project::handle(args, config).expect("Could not initialize project") // for global args, add &cli.global
+        Command::InitProject(args) => init_project::handle(args, config).expect("Could not initialize project")
         // TODO: Command::AddFeature(args)
     }
 
