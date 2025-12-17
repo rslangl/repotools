@@ -31,15 +31,11 @@ impl MavenProject {
             .get("group_id")
             .cloned()
             .ok_or(MavenProjectError::MissingProperty("group_id".into()))?;
-            //.unwrap();
-            // .ok_or("Expected Maven setting `groupId`")?;
 
         let artifact_id = settings
             .get("artifact_id")
             .cloned()
             .ok_or(MavenProjectError::MissingProperty("artifact_id".into()))?;
-            //.unwrap();
-            // .ok_or("Expected Maven setting `artifactId`")?;
 
         Ok(Self {
             group_id: group_id,

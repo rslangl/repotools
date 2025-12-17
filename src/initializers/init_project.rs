@@ -11,7 +11,8 @@ use clap::Args;
 use serde::Serialize;
 
 use crate::initializers::project_types::maven::{MavenProject, MavenProjectError};
-use crate::initializers::project_types::ansible::AnsibleProject;
+use crate::initializers::project_types::ansible::{AnsibleProject, AnsibleProjectError};
+
 use crate::app_config::app_config::AppConfig;
 
 #[derive(Debug)]
@@ -23,8 +24,8 @@ pub enum InitProjectError {
         path: PathBuf,
         source: std::io::Error,
     },
-    MavenProject(MavenProjectError)
-    // TODO: same for ansible
+    MavenProject(MavenProjectError),
+    AnsibleProject(AnsibleProjectError)
 }
 
 impl From<io::Error> for InitProjectError {
@@ -45,10 +46,19 @@ impl From<MavenProjectError> for InitProjectError {
     }
 }
 
+impl From<AnsibleProjectError> for InitProjectError {
+    fn from(e: AnsibleProjectError) -> Self {
+        InitProjectError::AnsibleProject(e)
+    }
+}
+
 impl fmt::Display for InitProjectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InitProjectError::MavenProject(e) => {
+                write!(f, "{}", e)
+            },
+            InitProjectError::AnsibleProject(e) => {
                 write!(f, "{}", e)
             },
             _ => todo!() // TODO: need exhaustive match arms
@@ -125,7 +135,7 @@ impl ProjectFactory {
     fn new(project_type: &str, settings: HashMap<String, String>) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
         match project_type {
             "MAVEN" => Ok(Box::new(MavenProject::new(settings)?)),
-            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings))),
+            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings)?)),
             _ => return Err(InitProjectError::Invalid("Unknown project type".into())),
         }
     }

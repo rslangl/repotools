@@ -1,8 +1,23 @@
 //! src/initializers/project_ansible.rs
 
-use std::{path::Path, collections::HashMap};
+use std::{fmt, path::Path, collections::HashMap};
 
 use crate::initializers::init_project::{Val, ProjectStrategy, InitProjectError, create_files};
+
+#[derive(Debug)]
+pub enum AnsibleProjectError {
+    MissingProperty(String)
+}
+
+impl fmt::Display for AnsibleProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AnsibleProjectError::MissingProperty(property) => {
+                write!(f, "Template creation error: missing property `{}`", property)
+            }
+        }
+    }
+}
 
 pub struct AnsibleProject {
     // Host tuples are FQDN/hostnames and IP
@@ -11,12 +26,12 @@ pub struct AnsibleProject {
 }
 
 impl AnsibleProject {
-    pub fn new(settings: HashMap<String, String>) -> Self {
+    pub fn new(settings: HashMap<String, String>) -> Result<Self, AnsibleProjectError> {
 
         let hosts = settings
             .get("hosts")
             .cloned()
-            .unwrap()
+            .ok_or(AnsibleProjectError::MissingProperty("hosts".into()))?
             .split(',')
             .map(|s| s.trim().to_string())
             .collect();
@@ -24,15 +39,15 @@ impl AnsibleProject {
         let roles = settings
             .get("roles")
             .cloned()
-            .unwrap()
+            .ok_or(AnsibleProjectError::MissingProperty("roles".into()))?
             .split(',')
             .map(|s| s.trim().to_string())
             .collect();
 
-        Self{
+        Ok(Self{
             hosts: hosts,
             roles: roles
-        }
+        })
     }
 
     fn get_properties(&self) -> HashMap<String, Val> {
