@@ -2,7 +2,7 @@
 
 use std::{path::Path, collections::HashMap};
 
-use crate::initializers::init_project::{Val, ProjectStrategy, create_files};
+use crate::initializers::init_project::{Val, ProjectStrategy, InitProjectError, create_files};
 
 pub struct AnsibleProject {
     // Host tuples are FQDN/hostnames and IP
@@ -44,8 +44,8 @@ impl AnsibleProject {
 }
 
 impl ProjectStrategy for AnsibleProject {
-    fn write_templates(&self, source: &Path) -> Result<(), String> {
-        create_files(&source, &source, &AnsibleProject::get_properties(self));
+    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError> {
+        create_files(&source, &source, &AnsibleProject::get_properties(self))?;
         Ok(())
     }
 }

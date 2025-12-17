@@ -1,6 +1,7 @@
 //! src/initializers/init_project.rs
 
 use std::{
+    fmt,
     io,
     collections::HashMap, fs,
     path::{Path, PathBuf},
@@ -9,7 +10,7 @@ use std::{
 use clap::Args;
 use serde::Serialize;
 
-use crate::initializers::project_types::maven::MavenProject;
+use crate::initializers::project_types::maven::{MavenProject, MavenProjectError};
 use crate::initializers::project_types::ansible::AnsibleProject;
 use crate::app_config::app_config::AppConfig;
 
@@ -21,7 +22,9 @@ pub enum InitProjectError {
     Write {
         path: PathBuf,
         source: std::io::Error,
-    }
+    },
+    MavenProject(MavenProjectError)
+    // TODO: same for ansible
 }
 
 impl From<io::Error> for InitProjectError {
@@ -33,6 +36,23 @@ impl From<io::Error> for InitProjectError {
 impl From<tera::Error> for InitProjectError {
     fn from(e: tera::Error) -> Self {
         InitProjectError::Render(e)
+    }
+}
+
+impl From<MavenProjectError> for InitProjectError {
+    fn from(e: MavenProjectError) -> Self {
+        InitProjectError::MavenProject(e)
+    }
+}
+
+impl fmt::Display for InitProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InitProjectError::MavenProject(e) => {
+                write!(f, "{}", e)
+            },
+            _ => todo!() // TODO: need exhaustive match arms
+        }
     }
 }
 
@@ -77,14 +97,14 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
         Self { initialize_strategy }
     }
 
-    fn initialize(&self, source: &Path) -> Result<(), String> {
+    fn initialize(&self, source: &Path) -> Result<(), InitProjectError> {
         self.initialize_strategy.write_templates(source)
     }
 }
 
-//! Rendering templates with `Tera` require a value that implements `serde::Serializer`,
-//! and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
-//! enum as the contained value
+// Rendering templates with `Tera` require a value that implements `serde::Serializer`,
+// and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
+// enum as the contained value
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Val {
@@ -96,7 +116,7 @@ pub enum Val {
 }
 
 pub trait ProjectStrategy {
-    fn write_templates(&self, source: &Path) -> Result<(), String>;
+    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError>;
 }
 
 struct ProjectFactory;
@@ -104,7 +124,7 @@ struct ProjectFactory;
 impl ProjectFactory {
     fn new(project_type: &str, settings: HashMap<String, String>) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
         match project_type {
-            "MAVEN" => Ok(Box::new(MavenProject::new(settings))),
+            "MAVEN" => Ok(Box::new(MavenProject::new(settings)?)),
             "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings))),
             _ => return Err(InitProjectError::Invalid("Unknown project type".into())),
         }
@@ -166,7 +186,7 @@ pub fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Va
     Ok(())
 }
 
-pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
+pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
 
     let template = config.templates.iter().find(|p| {
         if let Some(profile) = &args.profile {
@@ -174,7 +194,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
         } else {
             p.name == args.project_type && p.profile == "default"
         }
-    }).ok_or("Could not find template".to_string())?;
+    }).ok_or(InitProjectError::Invalid("Could not find template".into()))?;
 
     // Convert custom key=value settings into map
     // for easier lookup
@@ -187,8 +207,11 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
         None => HashMap::new()
     };
 
-    if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
-        let _ = project.write_templates(template.template_files.as_path());
+    match ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
+        Ok(project_template) => {
+            let _ = project_template.write_templates(template.template_files.as_path())?;
+        },
+        Err(e) => return Err(e)
     }
 
     Ok(())

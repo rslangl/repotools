@@ -1,8 +1,23 @@
 //! src/initializers/project_maven.rs
 
-use std::{path::Path, collections::HashMap};
+use std::{fmt, path::Path, collections::HashMap};
 
-use crate::initializers::init_project::{Val, ProjectStrategy, create_files};
+use crate::initializers::init_project::{Val, ProjectStrategy, InitProjectError, create_files};
+
+#[derive(Debug)]
+pub enum MavenProjectError {
+    MissingProperty(String)
+}
+
+impl fmt::Display for MavenProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MavenProjectError::MissingProperty(property) => {
+                write!(f, "Template creation error: missing property `{}`", property)
+            }
+        }
+    }
+}
 
 pub struct MavenProject {
     group_id: String,
@@ -10,24 +25,26 @@ pub struct MavenProject {
 }
 
 impl MavenProject {
-    pub fn new(settings: HashMap<String, String>) -> Self {
+    pub fn new(settings: HashMap<String, String>) -> Result<Self, MavenProjectError> {
 
         let group_id = settings
             .get("group_id")
             .cloned()
-            .unwrap();
+            .ok_or(MavenProjectError::MissingProperty("group_id".into()))?;
+            //.unwrap();
             // .ok_or("Expected Maven setting `groupId`")?;
 
         let artifact_id = settings
             .get("artifact_id")
             .cloned()
-            .unwrap();
+            .ok_or(MavenProjectError::MissingProperty("artifact_id".into()))?;
+            //.unwrap();
             // .ok_or("Expected Maven setting `artifactId`")?;
 
-        Self {
+        Ok(Self {
             group_id: group_id,
             artifact_id: artifact_id
-        }
+        })
     }
 
     fn get_properties(&self) -> HashMap<String, Val> {
@@ -40,8 +57,8 @@ impl MavenProject {
 
 impl ProjectStrategy for MavenProject {
 
-    fn write_templates(&self, source: &Path) -> Result<(), String> {
-        create_files(&source, &source, &MavenProject::get_properties(self));
+    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError> {
+        create_files(&source, &source, &MavenProject::get_properties(self))?;
         Ok(())
     }
 }
