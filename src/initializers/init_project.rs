@@ -1,19 +1,70 @@
 //! src/initializers/init_project.rs
 
 use std::{
-    collections::HashMap, fs::self,
-    path::Path,
+    fmt,
+    io,
+    collections::HashMap, fs,
+    path::{Path, PathBuf},
     str::FromStr};
 
 use clap::Args;
 use serde::Serialize;
 
-use crate::initializers::project_types::maven::MavenProject;
-use crate::initializers::project_types::ansible::AnsibleProject;
+use crate::initializers::project_types::maven::{MavenProject, MavenProjectError};
+use crate::initializers::project_types::ansible::{AnsibleProject, AnsibleProjectError};
+
 use crate::app_config::app_config::AppConfig;
 
-const PROJECT_TYPE_MAVEN: &'static str = "MAVEN";
-const PROJECT_TYPE_ANSIBLE: &'static str = "ANSIBLE";
+#[derive(Debug)]
+pub enum InitProjectError {
+    Io(io::Error),
+    Render(tera::Error),
+    Invalid(String),
+    Write {
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    MavenProject(MavenProjectError),
+    AnsibleProject(AnsibleProjectError)
+}
+
+impl From<io::Error> for InitProjectError {
+    fn from(e: io::Error) -> Self {
+        InitProjectError::Io(e)
+    }
+}
+
+impl From<tera::Error> for InitProjectError {
+    fn from(e: tera::Error) -> Self {
+        InitProjectError::Render(e)
+    }
+}
+
+impl From<MavenProjectError> for InitProjectError {
+    fn from(e: MavenProjectError) -> Self {
+        InitProjectError::MavenProject(e)
+    }
+}
+
+impl From<AnsibleProjectError> for InitProjectError {
+    fn from(e: AnsibleProjectError) -> Self {
+        InitProjectError::AnsibleProject(e)
+    }
+}
+
+impl fmt::Display for InitProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InitProjectError::MavenProject(e) => {
+                write!(f, "{}", e)
+            },
+            InitProjectError::AnsibleProject(e) => {
+                write!(f, "{}", e)
+            },
+            _ => todo!() // TODO: need exhaustive match arms
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct ProjectSetting {
@@ -56,16 +107,14 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
         Self { initialize_strategy }
     }
 
-    fn initialize(&self, source: &Path) -> Result<(), String> {
+    fn initialize(&self, source: &Path) -> Result<(), InitProjectError> {
         self.initialize_strategy.write_templates(source)
     }
 }
 
-/**
-Rendering templates with `Tera` require a value that implements `serde::Serializer`,
-and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
-enum as the contained value
-*/
+// Rendering templates with `Tera` require a value that implements `serde::Serializer`,
+// and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
+// enum as the contained value
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Val {
@@ -77,57 +126,77 @@ pub enum Val {
 }
 
 pub trait ProjectStrategy {
-    fn write_templates(&self, source: &Path) -> Result<(), String>;
+    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError>;
 }
 
 struct ProjectFactory;
 
 impl ProjectFactory {
-    fn new(project_type: &str, settings: HashMap<String, String>) -> Result<Box<dyn ProjectStrategy>, String> {
+    fn new(project_type: &str, settings: HashMap<String, String>) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
         match project_type {
-            PROJECT_TYPE_MAVEN => Ok(Box::new(MavenProject::new(settings))),
-            PROJECT_TYPE_ANSIBLE => Ok(Box::new(AnsibleProject::new(settings))),
-            _ => Err("Unknown strategy".to_string()),
+            "MAVEN" => Ok(Box::new(MavenProject::new(settings)?)),
+            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings)?)),
+            _ => return Err(InitProjectError::Invalid("Unknown project type".into())),
         }
     }
 }
 
-fn render(content: String, properties: &HashMap<String, Val>) -> Vec<u8> {
+fn render(content: String, properties: &HashMap<String, Val>) -> Result<Vec<u8>, InitProjectError> {
     let mut context = tera::Context::new();
 
     for (key, val) in properties.iter() {
         context.insert(key.as_str(), val);
     }
 
-    let rendered = tera::Tera::one_off(&content, &context, false).unwrap();
-    rendered.as_bytes().to_vec()
+    let rendered = match tera::Tera::one_off(&content, &context, false) {
+        Ok(r) => {
+            if r.is_empty() {
+                return Err(InitProjectError::Invalid("Empty resource file".into()))
+            }
+            r
+        },
+        Err(e) => return Err(InitProjectError::Render(e.into()))
+    };
+
+    Ok(rendered.as_bytes().to_vec())
 }
 
-pub fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) {
+pub fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) -> Result<(), InitProjectError> {
     for entry in fs::read_dir(current).unwrap() {
+
         let entry = entry.unwrap();
         let path = entry.path();
         let relative_path = path.strip_prefix(root).unwrap();
 
         if path.is_dir() {
-            create_files(root, &path, &properties);
+            let _ = create_files(root, &path, &properties);
             continue;
         }
 
         let target_root = Path::new(".");   // TODO: using current dir for now
+
         let target = target_root.join(relative_path);
 
         if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).unwrap();
+            fs::create_dir_all(parent).map_err(|e| InitProjectError::Write {
+                path: parent.to_path_buf(),
+                source: e
+            })?;
         }
 
-        let content = fs::read_to_string(&path).unwrap();
-        let rendered = render(content, properties);
-        fs::write(target, rendered).unwrap();
+        let content = fs::read_to_string(&path)?;
+
+        let rendered = render(content, properties)?;
+        fs::write(target, rendered).map_err(|e| InitProjectError::Write {
+            path: path.clone(),
+            source: e,
+        })?;
     }
+
+    Ok(())
 }
 
-pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
+pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
 
     let template = config.templates.iter().find(|p| {
         if let Some(profile) = &args.profile {
@@ -135,7 +204,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
         } else {
             p.name == args.project_type && p.profile == "default"
         }
-    }).ok_or("Could not find template".to_string())?;
+    }).ok_or(InitProjectError::Invalid("Could not find template".into()))?;
 
     // Convert custom key=value settings into map
     // for easier lookup
@@ -148,8 +217,11 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), String> {
         None => HashMap::new()
     };
 
-    if let Ok(project) = ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
-        let _ = project.write_templates(template.template_files.as_path());
+    match ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
+        Ok(project_template) => {
+            let _ = project_template.write_templates(template.template_files.as_path())?;
+        },
+        Err(e) => return Err(e)
     }
 
     Ok(())
