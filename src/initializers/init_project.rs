@@ -10,10 +10,9 @@ use std::{
 use clap::Args;
 use serde::Serialize;
 
+use crate::app_config::app_config::AppConfig;
 use crate::initializers::project_types::maven::{MavenProject, MavenProjectError};
 use crate::initializers::project_types::ansible::{AnsibleProject, AnsibleProjectError};
-
-use crate::app_config::app_config::AppConfig;
 
 #[derive(Debug)]
 pub enum InitProjectError {
@@ -24,6 +23,7 @@ pub enum InitProjectError {
         path: PathBuf,
         source: std::io::Error,
     },
+    // Specific project type errors
     MavenProject(MavenProjectError),
     AnsibleProject(AnsibleProjectError)
 }

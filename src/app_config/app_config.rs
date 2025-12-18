@@ -1,7 +1,6 @@
 //! src/app_config/config.rs
 
 use std::{fs, io::{self, Write}, path::PathBuf};
-
 use config::{Config, FileFormat};
 use reqwest::Url;
 use serde::Deserialize;

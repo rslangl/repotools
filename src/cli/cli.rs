@@ -1,9 +1,9 @@
 //! src/cli/cli.rs
 
-use clap::{Parser, Subcommand};
-use crate::initializers::InitProjectArgs;
+use clap::{Parser, Subcommand, Args};
 
-use clap::Args;
+use crate::initializers::InitProjectArgs;
+use crate::features::ProjectFeatureArgs;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -14,19 +14,21 @@ pub struct Cli {
     pub command: Command,
 }
 
-#[derive(Subcommand)]
-pub enum Command {
-    #[clap(name = "init", about = "Initialize the project")]
-    InitProject(InitProjectArgs),
-    // TODO: add more subcommands as needed, e.g.
-    // License: add or remove license, optional inlined
-}
-
 #[derive(Args)]
 pub struct GlobalOpts {
+
     #[arg(long, name = "config")]
     pub config_path: Option<String>,
     // TODO: add data/cache path
 }
 
+#[derive(Subcommand)]
+pub enum Command {
+
+    #[clap(name = "init", about = "Initialize the project")]
+    InitProject(InitProjectArgs),
+
+    #[clap(name = "feature", about = "Add a feature to the project")]
+    ProjectFeature(ProjectFeatureArgs)
+}
 
