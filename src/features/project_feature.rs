@@ -8,7 +8,7 @@ use std::{
 use clap::Args;
 
 use crate::{
-    app_config::app_config::{AppConfig, Linter},
+    app_config::app_config::{AppConfig, Features, Linter},
     features::resources::{
         LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
     },
@@ -76,10 +76,17 @@ impl FeatureFactory {
     fn new(
         feature_function: String,
         feature_type: String,
+        features: Features,
     ) -> Result<Box<dyn FeatureStrategy>, ProjectFeatureError> {
-        match feature_function.as_str() {
-            "LINTER" => Ok(Box::new(LinterResource::new(feature_type)?)),
-            "LICENSE" => Ok(Box::new(LicenseResource::new(feature_type)?)),
+        match feature_function.to_uppercase().as_str() {
+            "LINTER" => Ok(Box::new(LinterResource::new(
+                feature_type,
+                features.linters,
+            )?)),
+            "LICENSE" => Ok(Box::new(LicenseResource::new(
+                feature_type,
+                features.licenses,
+            )?)),
             _ => return Err(ProjectFeatureError::Invalid("Unknown feature type".into())),
         }
     }
@@ -107,7 +114,7 @@ pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), Project
     // Subsequent match on type; linter={YAML,Markdown}, license={MIT,GPL}
     // let feature_type = args.feature_type;
 
-    match FeatureFactory::new(args.feature_function.to_uppercase(), args.feature_type) {
+    match FeatureFactory::new(args.feature_function, args.feature_type, config.features) {
         Ok(feature) => {
             //feature.write_file()?;
             // TODO: whatever the fuck

@@ -2,7 +2,10 @@
 
 use std::{fmt, path::Path};
 
-use crate::features::{ProjectFeatureError, project_feature::FeatureStrategy};
+use crate::{
+    app_config::app_config::License,
+    features::{ProjectFeatureError, project_feature::FeatureStrategy},
+};
 
 #[derive(Debug)]
 pub enum LicenseResourceError {
@@ -24,8 +27,12 @@ pub struct LicenseResource {
 }
 
 impl LicenseResource {
-    pub fn new(name: String) -> Result<Self, LicenseResourceError> {
-        // TODO: search through list of licenses
+    pub fn new(name: String, licenses: Vec<License>) -> Result<Self, LicenseResourceError> {
+        let licenses = licenses
+            .iter()
+            .find(|l| l.name == name.clone())
+            .ok_or(LicenseResourceError::NotFound(name.clone()))?;
+
         Ok(Self { name: name })
     }
 }

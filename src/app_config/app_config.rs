@@ -50,16 +50,16 @@ pub struct AppConfig {
 }
 
 #[derive(Deserialize)]
-struct License {
-    name: String,
-    file_path: PathBuf,
-    remote_src: Url,
+pub struct License {
+    pub name: String,
+    pub file_path: PathBuf,
+    pub remote_src: Url,
 }
 
 #[derive(Deserialize)]
 pub struct Linter {
-    name: String,
-    file_path: PathBuf,
+    pub name: String,
+    pub file_path: PathBuf,
 }
 
 #[derive(Deserialize)]

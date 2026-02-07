@@ -3,6 +3,7 @@
 use std::{fmt, path::Path};
 
 use crate::{
+    app_config::app_config::Linter,
     features::{ProjectFeatureError, project_feature::FeatureStrategy},
     utils::create_files,
 };
@@ -27,8 +28,12 @@ pub struct LinterResource {
 }
 
 impl LinterResource {
-    pub fn new(name: String) -> Result<Self, LinterResourceError> {
-        // TODO: do lookup to find desired linter
+    pub fn new(name: String, linters: Vec<Linter>) -> Result<Self, LinterResourceError> {
+        let linter = linters
+            .iter()
+            .find(|l| l.name == name.clone())
+            .ok_or(LinterResourceError::NotFound(name.clone()))?;
+
         Ok(Self { name: name })
     }
 }
