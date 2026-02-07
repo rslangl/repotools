@@ -1,9 +1,13 @@
 //! src/app_config/config.rs
 
-use std::{fs, io::{self, Write}, path::PathBuf};
 use config::{Config, FileFormat};
 use reqwest::Url;
 use serde::Deserialize;
+use std::{
+    fs,
+    io::{self, Write},
+    path::PathBuf,
+};
 use tera::Tera;
 
 #[derive(Debug)]
@@ -40,26 +44,31 @@ impl From<tera::Error> for ConfigError {
 pub struct AppConfig {
     pub auto_fetch: bool,
     pub licenses: Vec<License>,
+    pub linters: Vec<Linter>,
     pub templates: Vec<ProjectTemplate>,
 }
 
-// TODO: add other structs reflecting the contents of the resources found in src/resources
 #[derive(Deserialize)]
 struct License {
     name: String,
     file_path: PathBuf,
-    remote_src: Url
+    remote_src: Url,
+}
+
+#[derive(Deserialize)]
+pub struct Linter {
+    name: String,
+    file_path: PathBuf,
 }
 
 #[derive(Deserialize)]
 pub struct ProjectTemplate {
     pub name: String,
     pub profile: String,
-    pub template_files: PathBuf
+    pub template_files: PathBuf,
 }
 
 pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
-
     let config_path = match file_path {
         Some(path) => PathBuf::from(path),
         None => {
@@ -79,14 +88,15 @@ pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
                         }
                         r
                     }
-                    Err(e) => return Err(ConfigError::Render(e.into()))
+                    Err(e) => return Err(ConfigError::Render(e.into())),
                 };
 
                 let mut f = fs::File::create(&path)?;
-                f.write_all(rendered.as_bytes()).map_err(|e| ConfigError::Write {
-                    path: path.clone(),
-                    source: e,
-                })?;
+                f.write_all(rendered.as_bytes())
+                    .map_err(|e| ConfigError::Write {
+                        path: path.clone(),
+                        source: e,
+                    })?;
             }
 
             path
@@ -94,7 +104,10 @@ pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
     };
 
     let config = Config::builder()
-        .add_source(config::File::new(config_path.to_str().unwrap(), FileFormat::Toml))
+        .add_source(config::File::new(
+            config_path.to_str().unwrap(),
+            FileFormat::Toml,
+        ))
         .build()?
         .try_deserialize::<AppConfig>()?;
 
