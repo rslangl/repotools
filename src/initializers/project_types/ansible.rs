@@ -84,7 +84,11 @@ impl AnsibleProject {
 
 impl ProjectStrategy for AnsibleProject {
     fn write_templates(&self, source: &Path) -> Result<(), InitProjectError> {
-        file_writer::create_files(&source, &source, &AnsibleProject::get_properties(self))?;
+        file_writer::create_files_with_properties(
+            &source,
+            &source,
+            &AnsibleProject::get_properties(self),
+        )?;
         Ok(())
     }
 }

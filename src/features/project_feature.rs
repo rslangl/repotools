@@ -12,6 +12,7 @@ use crate::{
     features::resources::{
         LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
     },
+    utils::file_writer::FileWriteError,
 };
 
 #[derive(Debug)]
@@ -20,6 +21,12 @@ pub enum ProjectFeatureError {
     // Specific feature type errors
     LicenseError(LicenseResourceError),
     LinterError(LinterResourceError),
+}
+
+impl From<FileWriteError> for ProjectFeatureError {
+    fn from(e: FileWriteError) -> Self {
+        todo!()
+    }
 }
 
 impl From<LicenseResourceError> for ProjectFeatureError {

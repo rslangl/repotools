@@ -65,7 +65,11 @@ impl MavenProject {
 
 impl ProjectStrategy for MavenProject {
     fn write_templates(&self, source: &Path) -> Result<(), InitProjectError> {
-        file_writer::create_files(&source, &source, &MavenProject::get_properties(self))?;
+        file_writer::create_files_with_properties(
+            &source,
+            &source,
+            &MavenProject::get_properties(self),
+        )?;
         Ok(())
     }
 }

@@ -2,7 +2,10 @@
 
 use std::{fmt, path::Path};
 
-use crate::features::{ProjectFeatureError, project_feature::FeatureStrategy};
+use crate::{
+    features::{ProjectFeatureError, project_feature::FeatureStrategy},
+    utils::create_files,
+};
 
 #[derive(Debug)]
 pub enum LinterResourceError {
@@ -32,6 +35,7 @@ impl LinterResource {
 
 impl FeatureStrategy for LinterResource {
     fn write_files(&self, source: &Path) -> Result<(), ProjectFeatureError> {
-        todo!()
+        create_files(&source, &source)?;
+        Ok(())
     }
 }
