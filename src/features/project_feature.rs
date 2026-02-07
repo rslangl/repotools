@@ -61,19 +61,19 @@ impl<T: FeatureStrategy> FeatureAddition<T> {
         Self { feature_strategy }
     }
 
-    fn add(&self, source: &Path) -> Result<(), ProjectFeatureError> {
-        self.feature_strategy.write_files(source)
+    fn add(&self) -> Result<(), ProjectFeatureError> {
+        self.feature_strategy.write_files()
     }
 }
 
 pub trait FeatureStrategy {
-    fn write_files(&self, source: &Path) -> Result<(), ProjectFeatureError>;
+    fn write_files(&self) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;
 
 impl FeatureFactory {
-    fn new(
+    fn add(
         feature_function: String,
         feature_type: String,
         features: Features,
@@ -102,22 +102,9 @@ pub struct ProjectFeatureArgs {
 }
 
 pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), ProjectFeatureError> {
-    // Match input on available types of features; linter, license
-    // let feature_function = config
-    //     .features
-    //     .iter()
-    //     .find(|f| f == args.feature_function)
-    //     .ok_or(ProjectFeatureError::Invalid(
-    //         "Could not find feature".into(),
-    //     ))?;
-    //
-    // Subsequent match on type; linter={YAML,Markdown}, license={MIT,GPL}
-    // let feature_type = args.feature_type;
-
-    match FeatureFactory::new(args.feature_function, args.feature_type, config.features) {
+    match FeatureFactory::add(args.feature_function, args.feature_type, config.features) {
         Ok(feature) => {
-            //feature.write_file()?;
-            // TODO: whatever the fuck
+            feature.write_files()?;
         }
         Err(e) => return Err(e),
     }

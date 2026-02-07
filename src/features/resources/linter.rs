@@ -1,6 +1,9 @@
 //! src/features/resources/linter.rs
 
-use std::{fmt, path::Path};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     app_config::app_config::Linter,
@@ -25,6 +28,7 @@ impl fmt::Display for LinterResourceError {
 
 pub struct LinterResource {
     name: String,
+    file: PathBuf,
 }
 
 impl LinterResource {
@@ -34,13 +38,16 @@ impl LinterResource {
             .find(|l| l.name == name.clone())
             .ok_or(LinterResourceError::NotFound(name.clone()))?;
 
-        Ok(Self { name: name })
+        Ok(Self {
+            name: name,
+            file: linter.file_path.clone(),
+        })
     }
 }
 
 impl FeatureStrategy for LinterResource {
-    fn write_files(&self, source: &Path) -> Result<(), ProjectFeatureError> {
-        create_files(&source, &source)?;
+    fn write_files(&self) -> Result<(), ProjectFeatureError> {
+        create_files(&self.file.as_path(), &self.file.as_path())?;
         Ok(())
     }
 }

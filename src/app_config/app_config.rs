@@ -4,7 +4,7 @@ use config::{Config, FileFormat};
 use reqwest::Url;
 use serde::Deserialize;
 use std::{
-    fs,
+    fmt, fs,
     io::{self, Write},
     path::PathBuf,
 };
@@ -37,6 +37,28 @@ impl From<config::ConfigError> for ConfigError {
 impl From<tera::Error> for ConfigError {
     fn from(e: tera::Error) -> Self {
         ConfigError::Render(e)
+    }
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::Io(e) => {
+                write!(f, "IO error: {}", e)
+            }
+            ConfigError::Load(e) => {
+                write!(f, "File load error: {}", e)
+            }
+            ConfigError::Render(e) => {
+                write!(f, "Template render error: {}", e)
+            }
+            ConfigError::Invalid(e) => {
+                write!(f, "Invalid input: {}", e)
+            }
+            ConfigError::Write { path: _, source: _ } => {
+                write!(f, "File write error for")
+            }
+        }
     }
 }
 

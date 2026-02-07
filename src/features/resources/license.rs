@@ -38,7 +38,7 @@ impl LicenseResource {
 }
 
 impl FeatureStrategy for LicenseResource {
-    fn write_files(&self, source: &Path) -> Result<(), ProjectFeatureError> {
+    fn write_files(&self) -> Result<(), ProjectFeatureError> {
         todo!()
     }
 }
