@@ -7,10 +7,11 @@ use std::{
 
 use clap::Args;
 
-use crate::app_config::app_config::AppConfig;
-use crate::features::project_feature::{
-    license::{LicenseResource, LicenseResourceError},
-    linter::{LinterResource, LinterResourceError},
+use crate::{
+    app_config::app_config::AppConfig,
+    features::resources::{
+        LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
+    },
 };
 
 #[derive(Debug)]
