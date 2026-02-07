@@ -1,22 +1,21 @@
 //! src/features/project_feature.rs
 
-use clap::Args;
 use std::{
-    fmt,
+    fmt, fs,
     path::{Path, PathBuf},
 };
 
-use crate::app_config::AppConfig;
-use crate::project_feature::license::{LicenseResource, LicenseResourceError};
-use crate::project_feature::linter::{LinterResource, LinterResourceError};
+use clap::Args;
+
+use crate::app_config::app_config::AppConfig;
+use crate::features::project_feature::{
+    license::{LicenseResource, LicenseResourceError},
+    linter::{LinterResource, LinterResourceError},
+};
 
 #[derive(Debug)]
 pub enum ProjectFeatureError {
-    // Invalid(String),
-    // Write {
-    //     path: PathBuf,
-    //     source: std::io::Error,
-    // },
+    Invalid(String),
     // Specific feature type errors
     LicenseError(LicenseResourceError),
     LinterError(LinterResourceError),
@@ -45,10 +44,6 @@ impl<T: FeatureStrategy> FeatureAddition<T> {
     fn add(&self, source: &Path) -> Result<(), ProjectFeatureError> {
         self.feature_strategy.write_file(source)
     }
-}
-
-pub trait FeatureStrategy {
-    fn write_file(&self, source: &Path) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;
@@ -103,7 +98,8 @@ pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), Project
 
     match FeatureFactory::new(args.feature_function.to_uppercase(), args.feature_type) {
         Ok(feature) => {
-            feature.write_file()?;
+            //feature.write_file()?;
+            // TODO: whatever the fuck
         }
         Err(e) => return Err(e),
     }

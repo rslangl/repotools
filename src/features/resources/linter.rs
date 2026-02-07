@@ -1,15 +1,17 @@
-//! src/features/feature_types/linter.rs
+//! src/features/resources/linter.rs
+
+use std::fmt;
 
 #[derive(Debug)]
 pub enum LinterResourceError {
-    NotFound,
+    NotFound(String),
 }
 
 impl fmt::Display for LinterResourceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LinterResourceError::NotFound => {
-                write!(f, "Requested linter resource was not found")
+            LinterResourceError::NotFound(linter) => {
+                write!(f, "Requested linter resource was not found: `{}`", linter)
             }
         }
     }
@@ -20,14 +22,8 @@ pub struct LinterResource {
 }
 
 impl LinterResource {
-    pub fn new(linter_name: String) -> Result<Self, LinterResourceError> {
-        Ok(Self { name: linter_name })
-    }
-}
-
-impl FeatureStrategy for LinterResource {
-    fn write_templates(&self) -> Result<(), ProjectFeatureError> {
-        create_files()?;
-        Ok(())
+    pub fn new(name: String) -> Result<Self, LinterResourceError> {
+        // TODO: do lookup to find desired linter
+        Ok(Self { name: name })
     }
 }

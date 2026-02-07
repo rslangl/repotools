@@ -5,34 +5,18 @@ use std::{collections::HashMap, fmt, path::Path, str::FromStr};
 use clap::Args;
 
 use crate::app_config::app_config::AppConfig;
-use crate::initializers::project_types::ansible::{AnsibleProject, AnsibleProjectError};
-use crate::initializers::project_types::maven::{MavenProject, MavenProjectError};
+use crate::initializers::project_types::{
+    ansible::{AnsibleProject, AnsibleProjectError},
+    maven::{MavenProject, MavenProjectError},
+};
 
 #[derive(Debug)]
 pub enum InitProjectError {
-    // Io(io::Error),
-    // Render(tera::Error),
     Invalid(String),
-    // Write {
-    //     path: PathBuf,
-    //     source: std::io::Error,
-    // },
     // Specific project type errors
     MavenProject(MavenProjectError),
     AnsibleProject(AnsibleProjectError),
 }
-
-// impl From<io::Error> for InitProjectError {
-//     fn from(e: io::Error) -> Self {
-//         InitProjectError::Io(e)
-//     }
-// }
-//
-// impl From<tera::Error> for InitProjectError {
-//     fn from(e: tera::Error) -> Self {
-//         InitProjectError::Render(e)
-//     }
-// }
 
 impl From<MavenProjectError> for InitProjectError {
     fn from(e: MavenProjectError) -> Self {
@@ -106,19 +90,6 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
     }
 }
 
-// Rendering templates with `Tera` require a value that implements `serde::Serializer`,
-// and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
-// enum as the contained value
-// #[derive(Serialize)]
-// #[serde(untagged)]
-// pub enum Val {
-//     Str(String),
-//     Num(i64),
-//     Bool(bool),
-//     Seq(Vec<Val>),
-//     Map(HashMap<String, Val>),
-// }
-
 pub trait ProjectStrategy {
     fn write_templates(&self, source: &Path) -> Result<(), InitProjectError>;
 }
@@ -138,61 +109,6 @@ impl ProjectFactory {
     }
 }
 
-// fn render(content: String, properties: &HashMap<String, Val>) -> Result<Vec<u8>, InitProjectError> {
-//     let mut context = tera::Context::new();
-//
-//     for (key, val) in properties.iter() {
-//         context.insert(key.as_str(), val);
-//     }
-//
-//     let rendered = match tera::Tera::one_off(&content, &context, false) {
-//         Ok(r) => {
-//             if r.is_empty() {
-//                 return Err(InitProjectError::Invalid("Empty resource file".into()))
-//             }
-//             r
-//         },
-//         Err(e) => return Err(InitProjectError::Render(e.into()))
-//     };
-//
-//     Ok(rendered.as_bytes().to_vec())
-// }
-//
-// pub fn create_files(root: &Path, current: &Path, properties: &HashMap<String, Val>) -> Result<(), InitProjectError> {
-//     for entry in fs::read_dir(current).unwrap() {
-//
-//         let entry = entry.unwrap();
-//         let path = entry.path();
-//         let relative_path = path.strip_prefix(root).unwrap();
-//
-//         if path.is_dir() {
-//             let _ = create_files(root, &path, &properties);
-//             continue;
-//         }
-//
-//         let target_root = Path::new(".");   // TODO: using current dir for now
-//
-//         let target = target_root.join(relative_path);
-//
-//         if let Some(parent) = target.parent() {
-//             fs::create_dir_all(parent).map_err(|e| InitProjectError::Write {
-//                 path: parent.to_path_buf(),
-//                 source: e
-//             })?;
-//         }
-//
-//         let content = fs::read_to_string(&path)?;
-//
-//         let rendered = render(content, properties)?;
-//         fs::write(target, rendered).map_err(|e| InitProjectError::Write {
-//             path: path.clone(),
-//             source: e,
-//         })?;
-//     }
-//
-//     Ok(())
-// }
-//
 pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
     let template = config
         .templates

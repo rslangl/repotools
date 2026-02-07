@@ -43,8 +43,9 @@ impl From<tera::Error> for ConfigError {
 #[derive(Deserialize)]
 pub struct AppConfig {
     pub auto_fetch: bool,
-    pub licenses: Vec<License>,
-    pub linters: Vec<Linter>,
+    // TODO: various global configs for license, linter, watcher settings, where auto_fetch is one
+    // used for the HTTP client where we automatically fetch licenses if they are not found
+    pub features: Features,
     pub templates: Vec<ProjectTemplate>,
 }
 
@@ -59,6 +60,12 @@ struct License {
 pub struct Linter {
     name: String,
     file_path: PathBuf,
+}
+
+#[derive(Deserialize)]
+pub struct Features {
+    pub licenses: Vec<License>,
+    pub linters: Vec<Linter>,
 }
 
 #[derive(Deserialize)]

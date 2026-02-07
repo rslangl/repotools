@@ -1,26 +1,29 @@
 //! src/features/resources/license.rs
 
+use std::fmt;
+
 #[derive(Debug)]
 pub enum LicenseResourceError {
-    NotFound,
+    NotFound(String),
 }
 
 impl fmt::Display for LicenseResourceError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>') -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LicenseResourceError::Notfound => {
-                write!(f, "Requested license resource was not found")
+            LicenseResourceError::Notfound(license) => {
+                write!(f, "Requested license resource was not found: `{}`", license)
             }
         }
     }
 }
 
-pub struct LicenseResourceError {
+pub struct LicenseResource {
     name: String,
 }
 
-impl LicenseResourceError {
-    pub fn new(license_name: String) -> Result<Self, LicenseResourceError> {
-        Ok(Self{ name: license_name })
+impl LicenseResource {
+    pub fn new(name: String) -> Result<Self, LicenseResourceError> {
+        // TODO: search through list of licenses
+        Ok(Self { name: name })
     }
 }
