@@ -9,6 +9,7 @@ use crate::initializers::project_types::{
     ansible::{AnsibleProject, AnsibleProjectError},
     maven::{MavenProject, MavenProjectError},
 };
+use crate::utils::file_writer::FileWriteError;
 
 #[derive(Debug)]
 pub enum InitProjectError {
@@ -16,6 +17,13 @@ pub enum InitProjectError {
     // Specific project type errors
     MavenProject(MavenProjectError),
     AnsibleProject(AnsibleProjectError),
+}
+
+// TODO: the fuck am I supposed to do with this
+impl From<FileWriteError> for InitProjectError {
+    fn from(e: FileWriteError) -> Self {
+        todo!()
+    }
 }
 
 impl From<MavenProjectError> for InitProjectError {

@@ -8,7 +8,7 @@ use std::{
 use clap::Args;
 
 use crate::{
-    app_config::app_config::AppConfig,
+    app_config::app_config::{AppConfig, Linter},
     features::resources::{
         LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
     },
@@ -20,6 +20,18 @@ pub enum ProjectFeatureError {
     // Specific feature type errors
     LicenseError(LicenseResourceError),
     LinterError(LinterResourceError),
+}
+
+impl From<LicenseResourceError> for ProjectFeatureError {
+    fn from(e: LicenseResourceError) -> Self {
+        ProjectFeatureError::LicenseError(e)
+    }
+}
+
+impl From<LinterResourceError> for ProjectFeatureError {
+    fn from(e: LinterResourceError) -> Self {
+        ProjectFeatureError::LinterError(e)
+    }
 }
 
 impl fmt::Display for ProjectFeatureError {
@@ -43,8 +55,12 @@ impl<T: FeatureStrategy> FeatureAddition<T> {
     }
 
     fn add(&self, source: &Path) -> Result<(), ProjectFeatureError> {
-        self.feature_strategy.write_file(source)
+        self.feature_strategy.write_files(source)
     }
+}
+
+pub trait FeatureStrategy {
+    fn write_files(&self, source: &Path) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;
@@ -55,8 +71,8 @@ impl FeatureFactory {
         feature_type: String,
     ) -> Result<Box<dyn FeatureStrategy>, ProjectFeatureError> {
         match feature_function.as_str() {
-            "LINTER" => Ok(Box::new(LinterResource::new(feature_type))?),
-            "LICENSE" => Ok(Box::new(LicenseResource::new(feature_type))?),
+            "LINTER" => Ok(Box::new(LinterResource::new(feature_type)?)),
+            "LICENSE" => Ok(Box::new(LicenseResource::new(feature_type)?)),
             _ => return Err(ProjectFeatureError::Invalid("Unknown feature type".into())),
         }
     }
@@ -69,19 +85,6 @@ pub struct ProjectFeatureArgs {
 
     #[arg(long = "type")]
     pub feature_type: String,
-}
-
-pub fn create_files(source: &Path) -> Result<(), ProjectFeatureError> {
-    let target = Path::new("."); // TODO:: using current dir for now
-
-    let contents = fs::read_to_string(source)?;
-
-    fs::write(target, contents).map_err(|e| ProjectFeatureError::Write {
-        path: target.clone(),
-        source: e,
-    })?;
-
-    Ok(())
 }
 
 pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), ProjectFeatureError> {

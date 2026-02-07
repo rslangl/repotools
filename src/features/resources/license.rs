@@ -10,7 +10,7 @@ pub enum LicenseResourceError {
 impl fmt::Display for LicenseResourceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LicenseResourceError::Notfound(license) => {
+            LicenseResourceError::NotFound(license) => {
                 write!(f, "Requested license resource was not found: `{}`", license)
             }
         }
