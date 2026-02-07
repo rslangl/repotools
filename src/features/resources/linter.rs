@@ -1,6 +1,8 @@
 //! src/features/resources/linter.rs
 
-use std::fmt;
+use std::{fmt, path::Path};
+
+use crate::features::{ProjectFeatureError, project_feature::FeatureStrategy};
 
 #[derive(Debug)]
 pub enum LinterResourceError {
@@ -25,5 +27,11 @@ impl LinterResource {
     pub fn new(name: String) -> Result<Self, LinterResourceError> {
         // TODO: do lookup to find desired linter
         Ok(Self { name: name })
+    }
+}
+
+impl FeatureStrategy for LinterResource {
+    fn write_files(&self, source: &Path) -> Result<(), ProjectFeatureError> {
+        todo!()
     }
 }
