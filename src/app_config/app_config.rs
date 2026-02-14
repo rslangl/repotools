@@ -1,9 +1,13 @@
 //! src/app_config/config.rs
 
-use std::{fs, io::{self, Write}, path::PathBuf};
 use config::{Config, FileFormat};
 use reqwest::Url;
 use serde::Deserialize;
+use std::{
+    fmt, fs,
+    io::{self, Write},
+    path::PathBuf,
+};
 use tera::Tera;
 
 #[derive(Debug)]
@@ -36,30 +40,64 @@ impl From<tera::Error> for ConfigError {
     }
 }
 
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::Io(e) => {
+                write!(f, "IO error: {}", e)
+            }
+            ConfigError::Load(e) => {
+                write!(f, "File load error: {}", e)
+            }
+            ConfigError::Render(e) => {
+                write!(f, "Template render error: {}", e)
+            }
+            ConfigError::Invalid(e) => {
+                write!(f, "Invalid input: {}", e)
+            }
+            ConfigError::Write { path: _, source: _ } => {
+                write!(f, "File write error for")
+            }
+        }
+    }
+}
+
 #[derive(Deserialize)]
 pub struct AppConfig {
     pub auto_fetch: bool,
-    pub licenses: Vec<License>,
+    // TODO: various global configs for license, linter, watcher settings, where auto_fetch is one
+    // used for the HTTP client where we automatically fetch licenses if they are not found
+    pub features: Features,
     pub templates: Vec<ProjectTemplate>,
 }
 
-// TODO: add other structs reflecting the contents of the resources found in src/resources
 #[derive(Deserialize)]
-struct License {
-    name: String,
-    file_path: PathBuf,
-    remote_src: Url
+pub struct License {
+    pub name: String,
+    pub file_path: PathBuf,
+    pub remote_src: Url,
+}
+
+#[derive(Deserialize)]
+pub struct Linter {
+    pub name: String,
+    pub file_path: PathBuf,
+}
+
+#[derive(Deserialize)]
+pub struct Features {
+    pub licenses: Vec<License>,
+    pub linters: Vec<Linter>,
 }
 
 #[derive(Deserialize)]
 pub struct ProjectTemplate {
     pub name: String,
     pub profile: String,
-    pub template_files: PathBuf
+    pub template_files: PathBuf,
 }
 
 pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
-
     let config_path = match file_path {
         Some(path) => PathBuf::from(path),
         None => {
@@ -79,14 +117,15 @@ pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
                         }
                         r
                     }
-                    Err(e) => return Err(ConfigError::Render(e.into()))
+                    Err(e) => return Err(ConfigError::Render(e.into())),
                 };
 
                 let mut f = fs::File::create(&path)?;
-                f.write_all(rendered.as_bytes()).map_err(|e| ConfigError::Write {
-                    path: path.clone(),
-                    source: e,
-                })?;
+                f.write_all(rendered.as_bytes())
+                    .map_err(|e| ConfigError::Write {
+                        path: path.clone(),
+                        source: e,
+                    })?;
             }
 
             path
@@ -94,7 +133,10 @@ pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
     };
 
     let config = Config::builder()
-        .add_source(config::File::new(config_path.to_str().unwrap(), FileFormat::Toml))
+        .add_source(config::File::new(
+            config_path.to_str().unwrap(),
+            FileFormat::Toml,
+        ))
         .build()?
         .try_deserialize::<AppConfig>()?;
 

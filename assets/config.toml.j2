@@ -1,15 +1,5 @@
 auto_fetch=true
 
-[[licenses]]
-name="MIT"
-file_path="{{ data_dir }}MIT"
-remote_src="https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0"
-
-[[licenses]]
-name="LGPL"
-file_path="{{ data_dir }}LGPL"
-remote_src="https://raw.githubusercontent.com/git/git/refs/heads/master/LGPL-2.1"
-
 [[templates]]
 name="maven"
 profile="default"
@@ -19,3 +9,29 @@ template_files="{{ data_dir }}maven/default/"
 name="ansible"
 profile="default"
 template_files="{{ data_dir }}ansible/default"
+
+[[features.licenses]]
+name="yaml"
+file_path="{{ data_dir }}/resources/linters/yaml/"
+
+[[features.licenses]]
+name="markdown"
+file_path="{{ data_dir }}/resources/linters/markdown/"
+
+[[features.licenses]]
+name="MIT"
+file_path="{{ data_dir }}MIT"
+remote_src="https://raw.githubusercontent.com/aws/mit-0/refs/heads/master/MIT-0"
+
+[[features.licenses]]
+name="LGPL"
+file_path="{{ data_dir }}LGPL"
+remote_src="https://raw.githubusercontent.com/git/git/refs/heads/master/LGPL-2.1"
+
+[[features.linters]]
+name="yaml"
+file_path="{{ data_dir }}.yamllint.yaml"
+
+[[features.linters]]
+name="markdown"
+file_path="{{ data_dir }}.markdownlint.yaml"

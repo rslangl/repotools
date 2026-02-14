@@ -1,19 +1,44 @@
 //! src/features/project_feature.rs
 
-use std::{fmt, path::{Path, PathBuf}};
+use std::{
+    fmt, fs,
+    path::{Path, PathBuf},
+};
+
 use clap::Args;
 
-use crate::app_config::AppConfig;
+use crate::{
+    app_config::app_config::{AppConfig, Features, Linter},
+    features::resources::{
+        LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
+    },
+    utils::file_writer::FileWriteError,
+};
 
 #[derive(Debug)]
 pub enum ProjectFeatureError {
     Invalid(String),
-    Write {
-        path: PathBuf,
-        source: std::io::Error
-    }
     // Specific feature type errors
-    
+    LicenseError(LicenseResourceError),
+    LinterError(LinterResourceError),
+}
+
+impl From<FileWriteError> for ProjectFeatureError {
+    fn from(e: FileWriteError) -> Self {
+        todo!()
+    }
+}
+
+impl From<LicenseResourceError> for ProjectFeatureError {
+    fn from(e: LicenseResourceError) -> Self {
+        ProjectFeatureError::LicenseError(e)
+    }
+}
+
+impl From<LinterResourceError> for ProjectFeatureError {
+    fn from(e: LinterResourceError) -> Self {
+        ProjectFeatureError::LinterError(e)
+    }
 }
 
 impl fmt::Display for ProjectFeatureError {
@@ -21,8 +46,8 @@ impl fmt::Display for ProjectFeatureError {
         match self {
             ProjectFeatureError::Invalid(e) => {
                 write!(f, "{}", e)
-            },
-            _ => todo!()    // TODO: requires exhaustive match arms
+            }
+            _ => todo!(), // TODO: requires exhaustive match arms
         }
     }
 }
@@ -36,42 +61,52 @@ impl<T: FeatureStrategy> FeatureAddition<T> {
         Self { feature_strategy }
     }
 
-    fn add(&self, source: &Path) -> Result<(), ProjectFeatureError> {
-        self.feature_strategy.write_templates(source)
+    fn add(&self) -> Result<(), ProjectFeatureError> {
+        self.feature_strategy.write_files()
     }
 }
 
 pub trait FeatureStrategy {
-    fn write_templates(&self, source: &Path) -> Result<(), ProjectFeatureError>;
+    fn write_files(&self) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;
 
 impl FeatureFactory {
-    fn new(feature_type: &str) -> Result<(), ProjectFeatureError> {
-        match feature_type {
-            "LINTER" => Ok(()),
-            _ => return Err(ProjectFeatureError::Invalid("Unknown feature type".into()))
+    fn add(
+        feature_function: String,
+        feature_type: String,
+        features: Features,
+    ) -> Result<Box<dyn FeatureStrategy>, ProjectFeatureError> {
+        match feature_function.to_uppercase().as_str() {
+            "LINTER" => Ok(Box::new(LinterResource::new(
+                feature_type,
+                features.linters,
+            )?)),
+            "LICENSE" => Ok(Box::new(LicenseResource::new(
+                feature_type,
+                features.licenses,
+            )?)),
+            _ => Err(ProjectFeatureError::Invalid("Unknown feature type".into())),
         }
     }
 }
 
 #[derive(Args)]
 pub struct ProjectFeatureArgs {
+    #[arg(long = "function")]
+    pub feature_function: String,
 
     #[arg(long = "type")]
     pub feature_type: String,
 }
 
 pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), ProjectFeatureError> {
-
-    let feature_type = "";
-
-    match FeatureFactory::new(feature_type) {
-        Ok(feature_template) => {
-            // TODO: feature_template.write_templates()
-        },
-        Err(e) => return Err(e)
+    match FeatureFactory::add(args.feature_function, args.feature_type, config.features) {
+        Ok(feature) => {
+            feature.write_files()?;
+        }
+        Err(e) => return Err(e),
     }
 
     Ok(())
