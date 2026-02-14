@@ -102,6 +102,8 @@ pub fn create_files_with_properties(
     Ok(())
 }
 
+// TODO: resources are required to be read as directories, not the config file itself
+// which might be what we actually want in the future. Fix this tomfoolery you dimwit
 pub fn create_files(root: &Path, current: &Path) -> Result<(), FileWriteError> {
     for entry in fs::read_dir(current).unwrap() {
         let entry = entry.unwrap();

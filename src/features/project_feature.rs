@@ -87,7 +87,7 @@ impl FeatureFactory {
                 feature_type,
                 features.licenses,
             )?)),
-            _ => return Err(ProjectFeatureError::Invalid("Unknown feature type".into())),
+            _ => Err(ProjectFeatureError::Invalid("Unknown feature type".into())),
         }
     }
 }
