@@ -8,7 +8,7 @@ use std::{
 use crate::{
     app_config::app_config::Linter,
     features::{ProjectFeatureError, project_feature::FeatureStrategy},
-    utils::create_files,
+    utils::write,
 };
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ impl LinterResource {
 
 impl FeatureStrategy for LinterResource {
     fn write_files(&self) -> Result<(), ProjectFeatureError> {
-        create_files(&self.file.as_path(), &self.file.as_path())?;
+        write(&self.file.as_path(), None)?;
         Ok(())
     }
 }

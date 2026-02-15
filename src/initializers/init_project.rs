@@ -112,7 +112,7 @@ impl ProjectFactory {
         match project_type {
             "MAVEN" => Ok(Box::new(MavenProject::new(settings)?)),
             "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings)?)),
-            _ => return Err(InitProjectError::Invalid("Unknown project type".into())),
+            _ => Err(InitProjectError::Invalid("Unknown project type".into())),
         }
     }
 }
