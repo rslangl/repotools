@@ -47,7 +47,12 @@ impl fmt::Display for ProjectFeatureError {
             ProjectFeatureError::Invalid(e) => {
                 write!(f, "{}", e)
             }
-            _ => todo!(), // TODO: requires exhaustive match arms
+            ProjectFeatureError::LicenseError(e) => {
+                write!(f, "{}", e)
+            }
+            ProjectFeatureError::LinterError(e) => {
+                write!(f, "{}", e)
+            }
         }
     }
 }

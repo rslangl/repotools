@@ -64,10 +64,10 @@ fn render(content: String, properties: &HashMap<String, Val>) -> Result<Vec<u8>,
     Ok(rendered.as_bytes().to_vec())
 }
 
-pub fn create_files_with_properties(
+fn create_recurse(
     root: &Path,
     current: &Path,
-    properties: &HashMap<String, Val>,
+    properties: &Option<HashMap<String, Val>>,
 ) -> Result<(), FileWriteError> {
     for entry in fs::read_dir(current).unwrap() {
         let entry = entry.unwrap();
@@ -75,7 +75,7 @@ pub fn create_files_with_properties(
         let relative_path = path.strip_prefix(root).unwrap();
 
         if path.is_dir() {
-            let _ = create_files_with_properties(root, &path, &properties);
+            let _ = create_recurse(root, &path, &properties);
             continue;
         }
 
@@ -92,7 +92,15 @@ pub fn create_files_with_properties(
 
         let content = fs::read_to_string(&path)?;
 
-        let rendered = render(content, properties)?;
+        let rendered = match properties {
+            Some(p) => render(content, p)?,
+            None => {
+                return Err(FileWriteError::Invalid(
+                    "Error reading template properties".into(),
+                ));
+            }
+        };
+
         fs::write(target, rendered).map_err(|e| FileWriteError::Write {
             path: path.clone(),
             source: e,
@@ -102,37 +110,17 @@ pub fn create_files_with_properties(
     Ok(())
 }
 
-// TODO: resources are required to be read as directories, not the config file itself
-// which might be what we actually want in the future. Fix this tomfoolery you dimwit
-pub fn create_files(root: &Path, current: &Path) -> Result<(), FileWriteError> {
-    for entry in fs::read_dir(current).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        let relative_path = path.strip_prefix(root).unwrap();
-
-        if path.is_dir() {
-            let _ = create_files(root, &path);
-            continue;
-        }
-
-        let target_root = Path::new("."); // TODO: using current dir for now
-
-        let target = target_root.join(relative_path);
-
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).map_err(|e| FileWriteError::Write {
-                path: parent.to_path_buf(),
-                source: e,
-            })?;
-        }
-
+// TODO: detect whether the single file to create is a template
+pub fn write(path: Path, properties: Option<HashMap<String, Val>>) -> Result<(), FileWriteError> {
+    if !(path.is_dir()) {
         let content = fs::read_to_string(&path)?;
 
-        fs::write(target, content).map_err(|e| FileWriteError::Write {
-            path: path.clone(),
+        fs::write(path, content).map_err(|e| FileWriteError::Write {
+            path: path.to_path_buf(),
             source: e,
         })?;
+        return Ok(());
     }
-
+    create_recurse(path, path, &properties)?;
     Ok(())
 }
