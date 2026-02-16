@@ -1,5 +1,6 @@
 //! src/initializers/init_project.rs
 
+use std::path::PathBuf;
 use std::{collections::HashMap, fmt, path::Path, str::FromStr};
 
 use clap::Args;
@@ -93,31 +94,34 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
         }
     }
 
-    fn initialize(&self, source: &Path) -> Result<(), InitProjectError> {
-        self.initialize_strategy.write_templates(source)
+    fn initialize(self) -> Result<(), InitProjectError> {
+        Ok(self.initialize_strategy.write_templates()?)
     }
 }
 
 pub trait ProjectStrategy {
-    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError>;
+    fn write_templates(self) -> Result<(), InitProjectError>;
 }
 
 struct ProjectFactory;
 
 impl ProjectFactory {
     fn new(
-        project_type: &str,
+        project_type: String,
+        template_files: PathBuf,
         settings: HashMap<String, String>,
     ) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
-        match project_type {
-            "MAVEN" => Ok(Box::new(MavenProject::new(settings)?)),
-            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings)?)),
+        match project_type.to_uppercase().as_str() {
+            "MAVEN" => Ok(Box::new(MavenProject::new(template_files, settings)?)),
+            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(template_files, settings)?)),
             _ => Err(InitProjectError::Invalid("Unknown project type".into())),
         }
     }
 }
 
 pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
+    // Ensure the passed project type and given profile, if any, is present in the config file
+    // before passing it along
     let template = config
         .templates
         .iter()
@@ -137,9 +141,9 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
         None => HashMap::new(),
     };
 
-    match ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
+    match ProjectFactory::new(args.project_type, template.template_files, settings) {
         Ok(project_template) => {
-            let _ = project_template.write_templates(template.template_files.as_path())?;
+            let _ = project_template.write_templates()?;
         }
         Err(e) => return Err(e),
     }

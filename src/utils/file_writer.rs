@@ -111,7 +111,10 @@ fn create_recurse(
 }
 
 // TODO: detect whether the single file to create is a template
-pub fn write(path: Path, properties: Option<HashMap<String, Val>>) -> Result<(), FileWriteError> {
+pub fn write(
+    path: PathBuf,
+    properties: Option<HashMap<String, Val>>,
+) -> Result<(), FileWriteError> {
     if !(path.is_dir()) {
         let content = fs::read_to_string(&path)?;
 
@@ -121,6 +124,6 @@ pub fn write(path: Path, properties: Option<HashMap<String, Val>>) -> Result<(),
         })?;
         return Ok(());
     }
-    create_recurse(path, path, &properties)?;
+    create_recurse(&path, &path, &properties)?;
     Ok(())
 }

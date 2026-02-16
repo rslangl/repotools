@@ -1,9 +1,12 @@
 //! src/initializers/project_maven.rs
 
-use std::{collections::HashMap, fmt, path::Path};
+use std::{collections::HashMap, fmt, path::PathBuf};
 
 use crate::{
-    initializers::init_project::{InitProjectError, ProjectStrategy},
+    initializers::{
+        init_project::{InitProjectError, ProjectStrategy},
+        project_types::common::FileTemplate,
+    },
     utils::file_writer,
 };
 
@@ -27,12 +30,17 @@ impl fmt::Display for MavenProjectError {
 }
 
 pub struct MavenProject {
-    group_id: String,
-    artifact_id: String,
+    pub file_template: FileTemplate,
+    pub settings: HashMap<String, file_writer::Val>,
+    //     group_id: String,
+    //     artifact_id: String,
 }
 
 impl MavenProject {
-    pub fn new(settings: HashMap<String, String>) -> Result<Self, MavenProjectError> {
+    pub fn new(
+        template_files: PathBuf,
+        settings: HashMap<String, String>,
+    ) -> Result<Self, MavenProjectError> {
         let group_id = settings
             .get("group_id")
             .cloned()
@@ -43,29 +51,40 @@ impl MavenProject {
             .cloned()
             .ok_or(MavenProjectError::MissingProperty("artifact_id".into()))?;
 
+        let project_properties = HashMap::from([
+            (
+                String::from("artifact_id"),
+                file_writer::Val::Str(artifact_id),
+            ),
+            (String::from("group_id"), file_writer::Val::Str(group_id)),
+        ]);
+
         Ok(Self {
-            group_id: group_id,
-            artifact_id: artifact_id,
+            file_template: FileTemplate::new(template_files),
+            settings: project_properties,
         })
     }
 
-    fn get_properties(&self) -> HashMap<String, file_writer::Val> {
-        let mut properties = HashMap::new();
-        properties.insert(
-            "group_id".to_string(),
-            file_writer::Val::Str(self.group_id.clone()),
-        );
-        properties.insert(
-            "artifact_id".to_string(),
-            file_writer::Val::Str(self.artifact_id.clone()),
-        );
-        properties
-    }
+    //     fn get_properties(&self) -> HashMap<String, file_writer::Val> {
+    //         let mut properties = HashMap::new();
+    //         properties.insert(
+    //             "group_id".to_string(),
+    //             file_writer::Val::Str(self.group_id.clone()),
+    //         );
+    //         properties.insert(
+    //             "artifact_id".to_string(),
+    //             file_writer::Val::Str(self.artifact_id.clone()),
+    //         );
+    //         properties
+    //     }
 }
 
 impl ProjectStrategy for MavenProject {
-    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError> {
-        file_writer::write(&source, Some(MavenProject::get_properties(self)))?;
+    fn write_templates(self) -> Result<(), InitProjectError> {
+        file_writer::write(
+            self.file_template.source_files,
+            Some(self.settings), //Some(MavenProject::get_properties(self)),
+        )?;
         Ok(())
     }
 }

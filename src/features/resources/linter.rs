@@ -1,9 +1,6 @@
 //! src/features/resources/linter.rs
 
-use std::{
-    fmt,
-    path::{Path, PathBuf},
-};
+use std::{fmt, path::PathBuf};
 
 use crate::{
     app_config::app_config::Linter,

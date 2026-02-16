@@ -47,7 +47,7 @@ impl LicenseResource {
 
 impl FeatureStrategy for LicenseResource {
     fn write_files(&self) -> Result<(), ProjectFeatureError> {
-        write(self.file.as_path(), None)?;
+        write(&self.file.as_path(), None)?;
         Ok(())
     }
 }
