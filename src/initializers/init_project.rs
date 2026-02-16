@@ -1,7 +1,7 @@
 //! src/initializers/init_project.rs
 
 use std::path::PathBuf;
-use std::{collections::HashMap, fmt, path::Path, str::FromStr};
+use std::{collections::HashMap, fmt, str::FromStr};
 
 use clap::Args;
 
@@ -122,7 +122,7 @@ impl ProjectFactory {
 pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
     // Ensure the passed project type and given profile, if any, is present in the config file
     // before passing it along
-    let template = config
+    let template: PathBuf = config
         .templates
         .iter()
         .find(|p| {
@@ -132,6 +132,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
                 p.name == args.project_type && p.profile == "default"
             }
         })
+        .map(|p| p.template_files.clone())
         .ok_or(InitProjectError::Invalid("Could not find template".into()))?;
 
     // Convert custom key=value settings into map
@@ -141,7 +142,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
         None => HashMap::new(),
     };
 
-    match ProjectFactory::new(args.project_type, template.template_files, settings) {
+    match ProjectFactory::new(args.project_type, template, settings) {
         Ok(project_template) => {
             let _ = project_template.write_templates()?;
         }

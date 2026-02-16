@@ -2,5 +2,4 @@
 
 pub mod app_config;
 
-pub use app_config::{get_config, AppConfig, ConfigError};
-
+pub use app_config::{AppConfig, ConfigError, get_config};

@@ -1,14 +1,11 @@
 //! src/features/project_feature.rs
 
-use std::{
-    fmt, fs,
-    path::{Path, PathBuf},
-};
+use std::fmt;
 
 use clap::Args;
 
 use crate::{
-    app_config::app_config::{AppConfig, Features, Linter},
+    app_config::app_config::{AppConfig, Features},
     features::resources::{
         LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
     },
@@ -66,13 +63,13 @@ impl<T: FeatureStrategy> FeatureAddition<T> {
         Self { feature_strategy }
     }
 
-    fn add(&self) -> Result<(), ProjectFeatureError> {
+    fn add(self) -> Result<(), ProjectFeatureError> {
         self.feature_strategy.write_files()
     }
 }
 
 pub trait FeatureStrategy {
-    fn write_files(&self) -> Result<(), ProjectFeatureError>;
+    fn write_files(self) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;

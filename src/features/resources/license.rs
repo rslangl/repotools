@@ -1,9 +1,6 @@
 //! src/features/resources/license.rs
 
-use std::{
-    fmt,
-    path::{Path, PathBuf},
-};
+use std::{fmt, path::PathBuf};
 
 use crate::{
     app_config::app_config::License,
@@ -46,8 +43,8 @@ impl LicenseResource {
 }
 
 impl FeatureStrategy for LicenseResource {
-    fn write_files(&self) -> Result<(), ProjectFeatureError> {
-        write(&self.file.as_path(), None)?;
+    fn write_files(self) -> Result<(), ProjectFeatureError> {
+        write(self.file, None)?;
         Ok(())
     }
 }
