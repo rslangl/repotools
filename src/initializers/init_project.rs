@@ -83,12 +83,12 @@ pub struct InitProjectArgs {
     pub settings: Option<Vec<ProjectSetting>>,
 }
 
-struct ProjectInitializer<T: ProjectStrategy> {
-    initialize_strategy: T,
+struct ProjectInitializer {
+    initialize_strategy: Box<dyn ProjectStrategy>,
 }
 
-impl<T: ProjectStrategy> ProjectInitializer<T> {
-    fn new(initialize_strategy: T) -> Self {
+impl ProjectInitializer {
+    fn new(initialize_strategy: Box<dyn ProjectStrategy>) -> Self {
         Self {
             initialize_strategy,
         }
@@ -100,7 +100,7 @@ impl<T: ProjectStrategy> ProjectInitializer<T> {
 }
 
 pub trait ProjectStrategy {
-    fn write_templates(self) -> Result<(), InitProjectError>;
+    fn write_templates(self: Box<Self>) -> Result<(), InitProjectError>;
 }
 
 struct ProjectFactory;
@@ -142,12 +142,13 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
         None => HashMap::new(),
     };
 
-    match ProjectFactory::new(args.project_type, template, settings) {
-        Ok(project_template) => {
-            let _ = project_template.write_templates()?;
-        }
-        Err(e) => return Err(e),
-    }
+    let strategy: Box<dyn ProjectStrategy> =
+        ProjectFactory::new(args.project_type, template, settings)?;
+
+    let initializer = ProjectInitializer::new(strategy);
+
+    initializer.initialize()?;
+    //project_template.write_templates()?;
 
     Ok(())
 }

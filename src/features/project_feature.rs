@@ -54,28 +54,37 @@ impl fmt::Display for ProjectFeatureError {
     }
 }
 
-struct FeatureAddition<T: FeatureStrategy> {
-    feature_strategy: T,
+#[derive(Args)]
+pub struct ProjectFeatureArgs {
+    #[arg(long = "function")]
+    pub feature_function: String,
+
+    #[arg(long = "type")]
+    pub feature_type: String,
 }
 
-impl<T: FeatureStrategy> FeatureAddition<T> {
-    fn new(feature_strategy: T) -> Self {
+struct FeatureAddition {
+    feature_strategy: Box<dyn FeatureStrategy>,
+}
+
+impl FeatureAddition {
+    fn new(feature_strategy: Box<dyn FeatureStrategy>) -> Self {
         Self { feature_strategy }
     }
 
-    fn add(self) -> Result<(), ProjectFeatureError> {
-        self.feature_strategy.write_files()
+    fn add_feature(self) -> Result<(), ProjectFeatureError> {
+        Ok(self.feature_strategy.write_files()?)
     }
 }
 
 pub trait FeatureStrategy {
-    fn write_files(self) -> Result<(), ProjectFeatureError>;
+    fn write_files(self: Box<Self>) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;
 
 impl FeatureFactory {
-    fn add(
+    fn add_feature(
         feature_function: String,
         feature_type: String,
         features: Features,
@@ -94,22 +103,21 @@ impl FeatureFactory {
     }
 }
 
-#[derive(Args)]
-pub struct ProjectFeatureArgs {
-    #[arg(long = "function")]
-    pub feature_function: String,
-
-    #[arg(long = "type")]
-    pub feature_type: String,
-}
-
 pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), ProjectFeatureError> {
-    match FeatureFactory::add(args.feature_function, args.feature_type, config.features) {
-        Ok(feature) => {
-            feature.write_files()?;
-        }
-        Err(e) => return Err(e),
-    }
+    let strategy = FeatureFactory::new(args.feature_function, args.feature_type, config.features)?;
+
+    let addition = FeatureAddition::new(strategy);
+
+    addition.feature_strategy()?;
+
+    // let feature = match FeatureFactory::add_feature(
+    //     args.feature_function,
+    //     args.feature_type,
+    //     config.features,
+    // ) {
+    //     Ok(f) => f,
+    //     Err(e) => return Err(e),
+    // };
 
     Ok(())
 }

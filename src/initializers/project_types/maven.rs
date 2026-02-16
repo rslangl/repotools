@@ -80,7 +80,7 @@ impl MavenProject {
 }
 
 impl ProjectStrategy for MavenProject {
-    fn write_templates(self) -> Result<(), InitProjectError> {
+    fn write_templates(self: Box<Self>) -> Result<(), InitProjectError> {
         file_writer::write(
             self.file_template.source_files,
             Some(self.settings), //Some(MavenProject::get_properties(self)),
