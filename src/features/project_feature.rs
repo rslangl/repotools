@@ -84,7 +84,7 @@ pub trait FeatureStrategy {
 struct FeatureFactory;
 
 impl FeatureFactory {
-    fn add_feature(
+    fn new(
         feature_function: String,
         feature_type: String,
         features: Features,
@@ -104,11 +104,12 @@ impl FeatureFactory {
 }
 
 pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), ProjectFeatureError> {
-    let strategy = FeatureFactory::new(args.feature_function, args.feature_type, config.features)?;
+    let strategy: Box<dyn FeatureStrategy> =
+        FeatureFactory::new(args.feature_function, args.feature_type, config.features)?;
 
-    let addition = FeatureAddition::new(strategy);
+    let addition: FeatureAddition = FeatureAddition::new(strategy);
 
-    addition.feature_strategy()?;
+    addition.add_feature()?;
 
     // let feature = match FeatureFactory::add_feature(
     //     args.feature_function,

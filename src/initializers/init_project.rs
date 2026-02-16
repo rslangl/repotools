@@ -145,7 +145,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
     let strategy: Box<dyn ProjectStrategy> =
         ProjectFactory::new(args.project_type, template, settings)?;
 
-    let initializer = ProjectInitializer::new(strategy);
+    let initializer: ProjectInitializer = ProjectInitializer::new(strategy);
 
     initializer.initialize()?;
     //project_template.write_templates()?;

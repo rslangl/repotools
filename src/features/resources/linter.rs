@@ -43,8 +43,8 @@ impl LinterResource {
 }
 
 impl FeatureStrategy for LinterResource {
-    fn write_files(self) -> Result<(), ProjectFeatureError> {
-        write(self.file, None)?;
+    fn write_files(self: Box<Self>) -> Result<(), ProjectFeatureError> {
+        file_write::write(self.file, None)?;
         Ok(())
     }
 }
