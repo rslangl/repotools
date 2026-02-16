@@ -7,7 +7,8 @@ use clap::Args;
 use crate::{
     app_config::app_config::{AppConfig, Features},
     features::resources::{
-        LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
+        license::{LicenseResource, LicenseResourceError},
+        linter::{LinterResource, LinterResourceError},
     },
     utils::file_writer::FileWriteError,
 };

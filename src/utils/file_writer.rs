@@ -118,8 +118,8 @@ pub fn write(
     if !(path.is_dir()) {
         let content = fs::read_to_string(&path)?;
 
-        fs::write(path, content).map_err(|e| FileWriteError::Write {
-            path: path.to_path_buf(),
+        fs::write(&path, content).map_err(|e| FileWriteError::Write {
+            path: path,
             source: e,
         })?;
         return Ok(());
