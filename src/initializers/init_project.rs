@@ -5,25 +5,27 @@ use std::{collections::HashMap, fmt, str::FromStr};
 
 use clap::Args;
 
-use crate::app_config::app_config::AppConfig;
-use crate::initializers::project_types::{
-    ansible::{AnsibleProject, AnsibleProjectError},
-    maven::{MavenProject, MavenProjectError},
-};
 use crate::utils::file_writer::FileWriteError;
+use crate::{
+    app_config::app_config::AppConfig,
+    initializers::project_types::{
+        ansible::{AnsibleProject, AnsibleProjectError},
+        maven::{MavenProject, MavenProjectError},
+    },
+};
 
 #[derive(Debug)]
 pub enum InitProjectError {
     Invalid(String),
+    FileWrite(FileWriteError),
     // Specific project type errors
     MavenProject(MavenProjectError),
     AnsibleProject(AnsibleProjectError),
 }
 
-// TODO: the fuck am I supposed to do with this
 impl From<FileWriteError> for InitProjectError {
     fn from(e: FileWriteError) -> Self {
-        todo!()
+        InitProjectError::FileWrite(e)
     }
 }
 
@@ -42,13 +44,18 @@ impl From<AnsibleProjectError> for InitProjectError {
 impl fmt::Display for InitProjectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            InitProjectError::Invalid(e) => {
+                write!(f, "{}", e)
+            }
+            InitProjectError::FileWrite(e) => {
+                write!(f, "{}", e)
+            }
             InitProjectError::MavenProject(e) => {
                 write!(f, "{}", e)
             }
             InitProjectError::AnsibleProject(e) => {
                 write!(f, "{}", e)
             }
-            _ => todo!(), // TODO: need exhaustive match arms
         }
     }
 }
@@ -148,7 +155,6 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
     let initializer: ProjectInitializer = ProjectInitializer::new(strategy);
 
     initializer.initialize()?;
-    //project_template.write_templates()?;
 
     Ok(())
 }

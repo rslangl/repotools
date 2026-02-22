@@ -2,7 +2,7 @@
 
 use std::{
     collections::HashMap,
-    fs,
+    fmt, fs,
     path::{Path, PathBuf},
 };
 
@@ -28,6 +28,25 @@ impl From<std::io::Error> for FileWriteError {
 impl From<tera::Error> for FileWriteError {
     fn from(e: tera::Error) -> Self {
         FileWriteError::Render(e)
+    }
+}
+
+impl fmt::Display for FileWriteError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FileWriteError::Io(e) => {
+                write!(f, "{}", e)
+            }
+            FileWriteError::Render(e) => {
+                write!(f, "{}", e)
+            }
+            FileWriteError::Invalid(e) => {
+                write!(f, "{}", e)
+            }
+            FileWriteError::Write { path, source } => {
+                write!(f, "{}:{}", path.display(), source)
+            }
+        }
     }
 }
 

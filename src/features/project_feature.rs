@@ -16,26 +16,27 @@ use crate::{
 #[derive(Debug)]
 pub enum ProjectFeatureError {
     Invalid(String),
+    FileWrite(FileWriteError),
     // Specific feature type errors
-    LicenseError(LicenseResourceError),
-    LinterError(LinterResourceError),
+    License(LicenseResourceError),
+    Linter(LinterResourceError),
 }
 
 impl From<FileWriteError> for ProjectFeatureError {
     fn from(e: FileWriteError) -> Self {
-        todo!()
+        ProjectFeatureError::FileWrite(e)
     }
 }
 
 impl From<LicenseResourceError> for ProjectFeatureError {
     fn from(e: LicenseResourceError) -> Self {
-        ProjectFeatureError::LicenseError(e)
+        ProjectFeatureError::License(e)
     }
 }
 
 impl From<LinterResourceError> for ProjectFeatureError {
     fn from(e: LinterResourceError) -> Self {
-        ProjectFeatureError::LinterError(e)
+        ProjectFeatureError::Linter(e)
     }
 }
 
@@ -45,10 +46,13 @@ impl fmt::Display for ProjectFeatureError {
             ProjectFeatureError::Invalid(e) => {
                 write!(f, "{}", e)
             }
-            ProjectFeatureError::LicenseError(e) => {
+            ProjectFeatureError::FileWrite(e) => {
                 write!(f, "{}", e)
             }
-            ProjectFeatureError::LinterError(e) => {
+            ProjectFeatureError::License(e) => {
+                write!(f, "{}", e)
+            }
+            ProjectFeatureError::Linter(e) => {
                 write!(f, "{}", e)
             }
         }
@@ -111,15 +115,6 @@ pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), Project
     let addition: FeatureAddition = FeatureAddition::new(strategy);
 
     addition.add_feature()?;
-
-    // let feature = match FeatureFactory::add_feature(
-    //     args.feature_function,
-    //     args.feature_type,
-    //     config.features,
-    // ) {
-    //     Ok(f) => f,
-    //     Err(e) => return Err(e),
-    // };
 
     Ok(())
 }

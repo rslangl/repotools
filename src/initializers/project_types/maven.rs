@@ -32,8 +32,6 @@ impl fmt::Display for MavenProjectError {
 pub struct MavenProject {
     pub file_template: FileTemplate,
     pub settings: HashMap<String, file_writer::Val>,
-    //     group_id: String,
-    //     artifact_id: String,
 }
 
 impl MavenProject {
@@ -64,27 +62,11 @@ impl MavenProject {
             settings: project_properties,
         })
     }
-
-    //     fn get_properties(&self) -> HashMap<String, file_writer::Val> {
-    //         let mut properties = HashMap::new();
-    //         properties.insert(
-    //             "group_id".to_string(),
-    //             file_writer::Val::Str(self.group_id.clone()),
-    //         );
-    //         properties.insert(
-    //             "artifact_id".to_string(),
-    //             file_writer::Val::Str(self.artifact_id.clone()),
-    //         );
-    //         properties
-    //     }
 }
 
 impl ProjectStrategy for MavenProject {
     fn write_templates(self: Box<Self>) -> Result<(), InitProjectError> {
-        file_writer::write(
-            self.file_template.source_files,
-            Some(self.settings), //Some(MavenProject::get_properties(self)),
-        )?;
+        file_writer::write(self.file_template.source_files, Some(self.settings))?;
         Ok(())
     }
 }
