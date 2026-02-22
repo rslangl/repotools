@@ -77,7 +77,7 @@ fn render(content: String, properties: &HashMap<String, Val>) -> Result<Vec<u8>,
             }
             r
         }
-        Err(e) => return Err(FileWriteError::Render(e.into())),
+        Err(e) => return Err(FileWriteError::Render(e)),
     };
 
     Ok(rendered.as_bytes().to_vec())
@@ -111,25 +111,50 @@ fn create_recurse(
 
         let content = fs::read_to_string(&path)?;
 
-        let rendered = match properties {
-            Some(p) => render(content, p)?,
-            None => {
-                return Err(FileWriteError::Invalid(
-                    "Error reading template properties".into(),
-                ));
+        match path.extension() {
+            Some(ext) => {
+                if ext == r#"j2"# {
+                    let rendered = match properties {
+                        Some(p) => {
+                            let r = render(content, p)?;
+                            r
+                        }
+                        None => {
+                            return Err(FileWriteError::Invalid(
+                                "Error reading template properties".into(),
+                            ));
+                        }
+                    };
+                    fs::write(target, rendered).map_err(|e| FileWriteError::Write {
+                        path: path.clone(),
+                        source: e,
+                    })?;
+                }
             }
+            None => fs::write(target, content).map_err(|e| FileWriteError::Write {
+                path: path.clone(),
+                source: e,
+            })?,
         };
 
-        fs::write(target, rendered).map_err(|e| FileWriteError::Write {
-            path: path.clone(),
-            source: e,
-        })?;
+        // let rendered = match properties {
+        //     Some(p) => render(content, p)?,
+        //     None => {
+        //         return Err(FileWriteError::Invalid(
+        //             "Error reading template properties".into(),
+        //         ));
+        //     }
+        // };
+
+        //     fs::write(target, rendered).map_err(|e| FileWriteError::Write {
+        //         path: path.clone(),
+        //         source: e,
+        //     })?;
     }
 
     Ok(())
 }
 
-// TODO: detect whether the single file to create is a template
 pub fn write(
     path: PathBuf,
     properties: Option<HashMap<String, Val>>,
