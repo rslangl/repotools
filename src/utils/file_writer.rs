@@ -100,7 +100,7 @@ fn create_recurse(
 
         let target_root = Path::new("."); // TODO: using current dir for now
 
-        let target = target_root.join(relative_path);
+        let mut target = target_root.join(relative_path);
 
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent).map_err(|e| FileWriteError::Write {
@@ -125,6 +125,7 @@ fn create_recurse(
                             ));
                         }
                     };
+                    target.set_extension("");
                     fs::write(target, rendered).map_err(|e| FileWriteError::Write {
                         path: path.clone(),
                         source: e,
