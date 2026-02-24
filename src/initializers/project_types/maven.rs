@@ -39,23 +39,25 @@ impl MavenProject {
         template_files: PathBuf,
         settings: HashMap<String, String>,
     ) -> Result<Self, MavenProjectError> {
-        let group_id = settings
-            .get("group_id")
-            .cloned()
-            .ok_or(MavenProjectError::MissingProperty("group_id".into()))?;
-
-        let artifact_id = settings
-            .get("artifact_id")
-            .cloned()
-            .ok_or(MavenProjectError::MissingProperty("artifact_id".into()))?;
-
-        let project_properties = HashMap::from([
-            (
-                String::from("artifact_id"),
-                file_writer::Val::Str(artifact_id),
-            ),
-            (String::from("group_id"), file_writer::Val::Str(group_id)),
-        ]);
+        let project_properties: HashMap<String, file_writer::Val> = HashMap::from([
+        (
+            String::from("artifact_id"),
+            file_writer::Val::Str(
+                settings
+                .get("group_id")
+                .cloned()
+                .ok_or(MavenProjectError::MissingProperty("group_id".into()))?
+            )
+        ),
+        (
+            String::from("group_id"),
+            file_writer::Val::Str(
+                settings
+                .get("artifact_id")
+                .cloned()
+                .ok_or(MavenProjectError::MissingProperty("artifact_id".into()))?
+            )
+        )]);
 
         Ok(Self {
             file_template: FileTemplate::new(template_files),
