@@ -53,7 +53,7 @@ impl fmt::Display for FileWriteError {
 // Rendering templates with `Tera` require a value that implements `serde::Serializer`,
 // and adding the `#[serde(untagged)]` directive tells `Serde` and `Tera` to serialize the
 // enum as the contained value
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(untagged)]
 pub enum Val {
     Str(String),
@@ -77,7 +77,10 @@ fn render(content: String, properties: &HashMap<String, Val>) -> Result<Vec<u8>,
             }
             r
         }
-        Err(e) => return Err(FileWriteError::Render(e)),
+        Err(e) => {
+            // TODO: entire error string is not passed upwards
+            return Err(FileWriteError::Render(e))
+        }
     };
 
     Ok(rendered.as_bytes().to_vec())
