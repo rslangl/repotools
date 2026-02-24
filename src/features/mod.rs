@@ -1,6 +1,6 @@
 //! src/features/mod.rs
 
-mod resources;
+pub mod resources;
 
 pub mod project_feature;
 

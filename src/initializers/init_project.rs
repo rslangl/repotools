@@ -1,28 +1,31 @@
 //! src/initializers/init_project.rs
 
-use std::{collections::HashMap, fmt, path::Path, str::FromStr};
+use std::path::PathBuf;
+use std::{collections::HashMap, fmt, str::FromStr};
 
 use clap::Args;
 
-use crate::app_config::app_config::AppConfig;
-use crate::initializers::project_types::{
-    ansible::{AnsibleProject, AnsibleProjectError},
-    maven::{MavenProject, MavenProjectError},
-};
 use crate::utils::file_writer::FileWriteError;
+use crate::{
+    app_config::app_config::AppConfig,
+    initializers::project_types::{
+        ansible::{AnsibleProject, AnsibleProjectError},
+        maven::{MavenProject, MavenProjectError},
+    },
+};
 
 #[derive(Debug)]
 pub enum InitProjectError {
     Invalid(String),
+    FileWrite(FileWriteError),
     // Specific project type errors
     MavenProject(MavenProjectError),
     AnsibleProject(AnsibleProjectError),
 }
 
-// TODO: the fuck am I supposed to do with this
 impl From<FileWriteError> for InitProjectError {
     fn from(e: FileWriteError) -> Self {
-        todo!()
+        InitProjectError::FileWrite(e)
     }
 }
 
@@ -41,13 +44,18 @@ impl From<AnsibleProjectError> for InitProjectError {
 impl fmt::Display for InitProjectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            InitProjectError::Invalid(e) => {
+                write!(f, "{}", e)
+            }
+            InitProjectError::FileWrite(e) => {
+                write!(f, "{}", e)
+            }
             InitProjectError::MavenProject(e) => {
                 write!(f, "{}", e)
             }
             InitProjectError::AnsibleProject(e) => {
                 write!(f, "{}", e)
             }
-            _ => todo!(), // TODO: need exhaustive match arms
         }
     }
 }
@@ -82,43 +90,46 @@ pub struct InitProjectArgs {
     pub settings: Option<Vec<ProjectSetting>>,
 }
 
-struct ProjectInitializer<T: ProjectStrategy> {
-    initialize_strategy: T,
+struct ProjectInitializer {
+    initialize_strategy: Box<dyn ProjectStrategy>,
 }
 
-impl<T: ProjectStrategy> ProjectInitializer<T> {
-    fn new(initialize_strategy: T) -> Self {
+impl ProjectInitializer {
+    fn new(initialize_strategy: Box<dyn ProjectStrategy>) -> Self {
         Self {
             initialize_strategy,
         }
     }
 
-    fn initialize(&self, source: &Path) -> Result<(), InitProjectError> {
-        self.initialize_strategy.write_templates(source)
+    fn initialize(self) -> Result<(), InitProjectError> {
+        Ok(self.initialize_strategy.write_templates()?)
     }
 }
 
 pub trait ProjectStrategy {
-    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError>;
+    fn write_templates(self: Box<Self>) -> Result<(), InitProjectError>;
 }
 
 struct ProjectFactory;
 
 impl ProjectFactory {
     fn new(
-        project_type: &str,
+        project_type: String,
+        template_files: PathBuf,
         settings: HashMap<String, String>,
     ) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
-        match project_type {
-            "MAVEN" => Ok(Box::new(MavenProject::new(settings)?)),
-            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(settings)?)),
-            _ => return Err(InitProjectError::Invalid("Unknown project type".into())),
+        match project_type.to_uppercase().as_str() {
+            "MAVEN" => Ok(Box::new(MavenProject::new(template_files, settings)?)),
+            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(template_files, settings)?)),
+            _ => Err(InitProjectError::Invalid("Unknown project type".into())),
         }
     }
 }
 
 pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
-    let template = config
+    // Ensure the passed project type and given profile, if any, is present in the config file
+    // before passing it along
+    let template: PathBuf = config
         .templates
         .iter()
         .find(|p| {
@@ -128,6 +139,7 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
                 p.name == args.project_type && p.profile == "default"
             }
         })
+        .map(|p| p.template_files.clone())
         .ok_or(InitProjectError::Invalid("Could not find template".into()))?;
 
     // Convert custom key=value settings into map
@@ -137,12 +149,12 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
         None => HashMap::new(),
     };
 
-    match ProjectFactory::new(args.project_type.to_uppercase().as_str(), settings) {
-        Ok(project_template) => {
-            let _ = project_template.write_templates(template.template_files.as_path())?;
-        }
-        Err(e) => return Err(e),
-    }
+    let strategy: Box<dyn ProjectStrategy> =
+        ProjectFactory::new(args.project_type, template, settings)?;
+
+    let initializer: ProjectInitializer = ProjectInitializer::new(strategy);
+
+    initializer.initialize()?;
 
     Ok(())
 }

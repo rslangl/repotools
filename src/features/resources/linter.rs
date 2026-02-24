@@ -1,14 +1,11 @@
 //! src/features/resources/linter.rs
 
-use std::{
-    fmt,
-    path::{Path, PathBuf},
-};
+use std::{fmt, path::PathBuf};
 
 use crate::{
     app_config::app_config::Linter,
     features::{ProjectFeatureError, project_feature::FeatureStrategy},
-    utils::create_files,
+    utils::file_writer,
 };
 
 #[derive(Debug)]
@@ -46,8 +43,8 @@ impl LinterResource {
 }
 
 impl FeatureStrategy for LinterResource {
-    fn write_files(&self) -> Result<(), ProjectFeatureError> {
-        create_files(&self.file.as_path(), &self.file.as_path())?;
+    fn write_files(self: Box<Self>) -> Result<(), ProjectFeatureError> {
+        file_writer::write(self.file, None)?;
         Ok(())
     }
 }

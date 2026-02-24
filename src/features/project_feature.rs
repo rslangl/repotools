@@ -1,16 +1,14 @@
 //! src/features/project_feature.rs
 
-use std::{
-    fmt, fs,
-    path::{Path, PathBuf},
-};
+use std::fmt;
 
 use clap::Args;
 
 use crate::{
-    app_config::app_config::{AppConfig, Features, Linter},
+    app_config::app_config::{AppConfig, Features},
     features::resources::{
-        LicenseResource, LicenseResourceError, LinterResource, LinterResourceError,
+        license::{LicenseResource, LicenseResourceError},
+        linter::{LinterResource, LinterResourceError},
     },
     utils::file_writer::FileWriteError,
 };
@@ -18,26 +16,27 @@ use crate::{
 #[derive(Debug)]
 pub enum ProjectFeatureError {
     Invalid(String),
+    FileWrite(FileWriteError),
     // Specific feature type errors
-    LicenseError(LicenseResourceError),
-    LinterError(LinterResourceError),
+    License(LicenseResourceError),
+    Linter(LinterResourceError),
 }
 
 impl From<FileWriteError> for ProjectFeatureError {
     fn from(e: FileWriteError) -> Self {
-        todo!()
+        ProjectFeatureError::FileWrite(e)
     }
 }
 
 impl From<LicenseResourceError> for ProjectFeatureError {
     fn from(e: LicenseResourceError) -> Self {
-        ProjectFeatureError::LicenseError(e)
+        ProjectFeatureError::License(e)
     }
 }
 
 impl From<LinterResourceError> for ProjectFeatureError {
     fn from(e: LinterResourceError) -> Self {
-        ProjectFeatureError::LinterError(e)
+        ProjectFeatureError::Linter(e)
     }
 }
 
@@ -47,33 +46,50 @@ impl fmt::Display for ProjectFeatureError {
             ProjectFeatureError::Invalid(e) => {
                 write!(f, "{}", e)
             }
-            _ => todo!(), // TODO: requires exhaustive match arms
+            ProjectFeatureError::FileWrite(e) => {
+                write!(f, "{}", e)
+            }
+            ProjectFeatureError::License(e) => {
+                write!(f, "{}", e)
+            }
+            ProjectFeatureError::Linter(e) => {
+                write!(f, "{}", e)
+            }
         }
     }
 }
 
-struct FeatureAddition<T: FeatureStrategy> {
-    feature_strategy: T,
+#[derive(Args)]
+pub struct ProjectFeatureArgs {
+    #[arg(long = "function")]
+    pub feature_function: String,
+
+    #[arg(long = "type")]
+    pub feature_type: String,
 }
 
-impl<T: FeatureStrategy> FeatureAddition<T> {
-    fn new(feature_strategy: T) -> Self {
+struct FeatureAddition {
+    feature_strategy: Box<dyn FeatureStrategy>,
+}
+
+impl FeatureAddition {
+    fn new(feature_strategy: Box<dyn FeatureStrategy>) -> Self {
         Self { feature_strategy }
     }
 
-    fn add(&self) -> Result<(), ProjectFeatureError> {
-        self.feature_strategy.write_files()
+    fn add_feature(self) -> Result<(), ProjectFeatureError> {
+        Ok(self.feature_strategy.write_files()?)
     }
 }
 
 pub trait FeatureStrategy {
-    fn write_files(&self) -> Result<(), ProjectFeatureError>;
+    fn write_files(self: Box<Self>) -> Result<(), ProjectFeatureError>;
 }
 
 struct FeatureFactory;
 
 impl FeatureFactory {
-    fn add(
+    fn new(
         feature_function: String,
         feature_type: String,
         features: Features,
@@ -92,22 +108,13 @@ impl FeatureFactory {
     }
 }
 
-#[derive(Args)]
-pub struct ProjectFeatureArgs {
-    #[arg(long = "function")]
-    pub feature_function: String,
-
-    #[arg(long = "type")]
-    pub feature_type: String,
-}
-
 pub fn handle(args: ProjectFeatureArgs, config: AppConfig) -> Result<(), ProjectFeatureError> {
-    match FeatureFactory::add(args.feature_function, args.feature_type, config.features) {
-        Ok(feature) => {
-            feature.write_files()?;
-        }
-        Err(e) => return Err(e),
-    }
+    let strategy: Box<dyn FeatureStrategy> =
+        FeatureFactory::new(args.feature_function, args.feature_type, config.features)?;
+
+    let addition: FeatureAddition = FeatureAddition::new(strategy);
+
+    addition.add_feature()?;
 
     Ok(())
 }

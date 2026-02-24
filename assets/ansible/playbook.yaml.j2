@@ -2,7 +2,6 @@
 ---
 - hosts: targets
   roles:
-    {% for role in roles %}
+    {% for role in roles -%}
     - {{ role }}
     {% endfor }
-

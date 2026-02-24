@@ -1,9 +1,12 @@
 //! src/initializers/project_ansible.rs
 
-use std::{collections::HashMap, fmt, path::Path};
+use std::{collections::HashMap, fmt, path::PathBuf};
 
 use crate::{
-    initializers::init_project::{InitProjectError, ProjectStrategy},
+    initializers::{
+        init_project::{InitProjectError, ProjectStrategy},
+        project_types::common::FileTemplate,
+    },
     utils::file_writer,
 };
 
@@ -27,68 +30,52 @@ impl fmt::Display for AnsibleProjectError {
 }
 
 pub struct AnsibleProject {
-    // Host tuples are FQDN/hostnames and IP
-    hosts: Vec<String>,
-    roles: Vec<String>,
+    file_template: FileTemplate,
+    settings: HashMap<String, file_writer::Val>,
 }
 
 impl AnsibleProject {
-    pub fn new(settings: HashMap<String, String>) -> Result<Self, AnsibleProjectError> {
-        let hosts = settings
-            .get("hosts")
-            .cloned()
-            .ok_or(AnsibleProjectError::MissingProperty("hosts".into()))?
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
-
-        let roles = settings
-            .get("roles")
-            .cloned()
-            .ok_or(AnsibleProjectError::MissingProperty("roles".into()))?
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
+    pub fn new(
+        template_files: PathBuf,
+        settings: HashMap<String, String>,
+    ) -> Result<Self, AnsibleProjectError> {
+        let project_properties: HashMap<String, file_writer::Val> = HashMap::from([
+            (
+                String::from("roles"),
+                file_writer::Val::Seq(
+                    settings
+                        .get("roles")
+                        .cloned()
+                        .ok_or_else(|| AnsibleProjectError::MissingProperty("roles".into()))?
+                        .split(',')
+                        .map(|s| file_writer::Val::Str(s.trim().to_string()))
+                        .collect(),
+                ),
+            ),
+            (
+                String::from("hosts"),
+                file_writer::Val::Seq(
+                    settings
+                        .get("hosts")
+                        .cloned()
+                        .ok_or_else(|| AnsibleProjectError::MissingProperty("hosts".into()))?
+                        .split(',')
+                        .map(|s| file_writer::Val::Str(s.trim().to_string()))
+                        .collect(),
+                ),
+            ),
+        ]);
 
         Ok(Self {
-            hosts: hosts,
-            roles: roles,
+            file_template: FileTemplate::new(template_files),
+            settings: project_properties,
         })
-    }
-
-    fn get_properties(&self) -> HashMap<String, file_writer::Val> {
-        let mut properties = HashMap::new();
-        properties.insert(
-            "roles".to_string(),
-            file_writer::Val::Seq(
-                self.roles
-                    .clone()
-                    .into_iter()
-                    .map(file_writer::Val::Str)
-                    .collect(),
-            ),
-        );
-        properties.insert(
-            "hosts".to_string(),
-            file_writer::Val::Seq(
-                self.hosts
-                    .clone()
-                    .into_iter()
-                    .map(file_writer::Val::Str)
-                    .collect(),
-            ),
-        );
-        properties
     }
 }
 
 impl ProjectStrategy for AnsibleProject {
-    fn write_templates(&self, source: &Path) -> Result<(), InitProjectError> {
-        file_writer::create_files_with_properties(
-            &source,
-            &source,
-            &AnsibleProject::get_properties(self),
-        )?;
+    fn write_templates(self: Box<Self>) -> Result<(), InitProjectError> {
+        file_writer::write(self.file_template.source_files, Some(self.settings))?;
         Ok(())
     }
 }
