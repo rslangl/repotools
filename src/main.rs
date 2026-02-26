@@ -72,7 +72,7 @@ fn main() -> Result<(), AppError> {
 
     match cli.command {
         Command::InitProject(args) => {
-            if let Err(e) = init_project::handle(args, config) {
+            if let Err(e) = init_project::handle(args, config, cache) {
                 eprintln!("Could not initialize project: {}", e)
             }
         }
