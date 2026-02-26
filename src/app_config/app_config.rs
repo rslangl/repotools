@@ -108,7 +108,7 @@ pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
                 let default_config = include_str!("../../assets/config.toml.j2");
 
                 let mut context = tera::Context::new();
-                context.insert("data_dir", &xdg.get_cache_home());
+                context.insert("data_dir", &xdg.get_data_home());
 
                 let rendered = match Tera::one_off(default_config, &context, false) {
                     Ok(r) => {

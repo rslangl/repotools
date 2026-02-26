@@ -1,23 +1,23 @@
 //! src/initializers/init_project.rs
 
-use std::path::PathBuf;
-use std::{collections::HashMap, fmt, str::FromStr};
+use std::{collections::HashMap, fmt, path::PathBuf, str::FromStr};
 
 use clap::Args;
 
-use crate::utils::file_writer::FileWriteError;
 use crate::{
-    app_config::app_config::AppConfig,
+    app_config::{AppCache, app_config::AppConfig},
     initializers::project_types::{
         ansible::{AnsibleProject, AnsibleProjectError},
         maven::{MavenProject, MavenProjectError},
     },
+    utils::file_writer::FileWriteError,
 };
 
 #[derive(Debug)]
 pub enum InitProjectError {
     Invalid(String),
     FileWrite(FileWriteError),
+    NotFound(PathBuf),
     // Specific project type errors
     MavenProject(MavenProjectError),
     AnsibleProject(AnsibleProjectError),
@@ -49,6 +49,9 @@ impl fmt::Display for InitProjectError {
             }
             InitProjectError::FileWrite(e) => {
                 write!(f, "{}", e)
+            }
+            InitProjectError::NotFound(e) => {
+                write!(f, "Template files not found: {}", e.display())
             }
             InitProjectError::MavenProject(e) => {
                 write!(f, "{}", e)
@@ -126,7 +129,11 @@ impl ProjectFactory {
     }
 }
 
-pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjectError> {
+pub fn handle(
+    args: InitProjectArgs,
+    config: AppConfig,
+    cache: AppCache,
+) -> Result<(), InitProjectError> {
     // Ensure the passed project type and given profile, if any, is present in the config file
     // before passing it along
     let template: PathBuf = config
@@ -139,8 +146,17 @@ pub fn handle(args: InitProjectArgs, config: AppConfig) -> Result<(), InitProjec
                 p.name == args.project_type && p.profile == "default"
             }
         })
-        .map(|p| p.template_files.clone())
-        .ok_or(InitProjectError::Invalid("Could not find template".into()))?;
+        .ok_or(InitProjectError::Invalid(String::from(
+            "Could not find template",
+        )))
+        .and_then(|p| -> Result<PathBuf, InitProjectError> {
+            println!("CACHE DIR: {}", cache.cache_dir.clone().display());
+            if p.template_files.starts_with(cache.cache_dir) {
+                Ok(p.template_files.clone())
+            } else {
+                Err(InitProjectError::NotFound(p.template_files.clone()))
+            }
+        })?;
 
     // Convert custom key=value settings into map
     // for easier lookup

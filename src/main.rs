@@ -6,14 +6,17 @@ use clap::Parser;
 
 use crate::cli::{Cli, Command};
 
-use repotools::app_config::{ConfigError, app_config};
-use repotools::cli;
-use repotools::features::{ProjectFeatureError, project_feature};
-use repotools::initializers::{InitProjectError, init_project};
+use repotools::{
+    app_config::{CacheError, ConfigError, app_cache, app_config},
+    cli,
+    features::{ProjectFeatureError, project_feature},
+    initializers::{InitProjectError, init_project},
+};
 
 #[derive(Debug)]
 enum AppError {
     Config(ConfigError),
+    Cache(CacheError),
     InitProject(InitProjectError),
     ProjectFeature(ProjectFeatureError),
 }
@@ -21,6 +24,12 @@ enum AppError {
 impl From<ConfigError> for AppError {
     fn from(e: ConfigError) -> Self {
         AppError::Config(e)
+    }
+}
+
+impl From<CacheError> for AppError {
+    fn from(e: CacheError) -> Self {
+        AppError::Cache(e)
     }
 }
 
@@ -48,6 +57,9 @@ impl fmt::Display for AppError {
             AppError::ProjectFeature(e) => {
                 write!(f, "FeatureErr: {}", e)
             }
+            AppError::Cache(e) => {
+                write!(f, "CacheErr: {}", e)
+            }
         }
     }
 }
@@ -56,10 +68,11 @@ fn main() -> Result<(), AppError> {
     let cli = Cli::parse();
 
     let config = app_config::get_config(cli.global.config_path)?;
+    let cache = app_cache::get_cache(cli.global.cache_path)?;
 
     match cli.command {
         Command::InitProject(args) => {
-            if let Err(e) = init_project::handle(args, config) {
+            if let Err(e) = init_project::handle(args, config, cache) {
                 eprintln!("Could not initialize project: {}", e)
             }
         }

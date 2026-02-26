@@ -18,7 +18,15 @@ pub struct Cli {
 pub struct GlobalOpts {
     #[arg(long, name = "config")]
     pub config_path: Option<String>,
-    // TODO: add data/cache path
+
+    #[arg(long, name = "cache")]
+    pub cache_path: Option<String>,
+
+    #[arg(long, name = "clear-cache")]
+    pub clear_cache: Option<bool>,
+
+    #[arg(long, name = "recreate-config")]
+    pub recreate_config: Option<bool>,
 }
 
 #[derive(Subcommand)]
