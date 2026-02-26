@@ -25,10 +25,10 @@ impl fmt::Display for CacheError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CacheError::Io(e) => {
-                write!(f, "{}", e)
+                write!(f, "IO error: {}", e)
             }
             CacheError::Invalid(e) => {
-                write!(f, "{}", e)
+                write!(f, "Invalid input: {}", e)
             }
         }
     }

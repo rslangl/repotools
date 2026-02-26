@@ -45,10 +45,10 @@ impl fmt::Display for InitProjectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InitProjectError::Invalid(e) => {
-                write!(f, "{}", e)
+                write!(f, "Invalid template input: {}", e)
             }
             InitProjectError::FileWrite(e) => {
-                write!(f, "{}", e)
+                write!(f, "Template file write erro: {}", e)
             }
             InitProjectError::NotFound(e) => {
                 write!(f, "Template files not found: {}", e.display())
@@ -105,7 +105,7 @@ impl ProjectInitializer {
     }
 
     fn initialize(self) -> Result<(), InitProjectError> {
-        Ok(self.initialize_strategy.write_templates()?)
+        Ok(ProjectStrategy::write_templates(self.initialize_strategy)?)
     }
 }
 
@@ -116,7 +116,7 @@ pub trait ProjectStrategy {
 struct ProjectFactory;
 
 impl ProjectFactory {
-    fn new(
+    fn create(
         project_type: String,
         template_files: PathBuf,
         settings: HashMap<String, String>,
@@ -166,7 +166,7 @@ pub fn handle(
     };
 
     let strategy: Box<dyn ProjectStrategy> =
-        ProjectFactory::new(args.project_type, template, settings)?;
+        ProjectFactory::create(args.project_type, template, settings)?;
 
     let initializer: ProjectInitializer = ProjectInitializer::new(strategy);
 

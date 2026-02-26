@@ -24,7 +24,6 @@ impl fmt::Display for LicenseResourceError {
 }
 
 pub struct LicenseResource {
-    name: String,
     file: PathBuf,
 }
 
@@ -36,7 +35,6 @@ impl LicenseResource {
             .ok_or(LicenseResourceError::NotFound(name.clone()))?;
 
         Ok(Self {
-            name: name,
             file: license.file_path.clone(),
         })
     }
