@@ -24,7 +24,6 @@ impl fmt::Display for LinterResourceError {
 }
 
 pub struct LinterResource {
-    name: String,
     file: PathBuf,
 }
 
@@ -36,7 +35,6 @@ impl LinterResource {
             .ok_or(LinterResourceError::NotFound(name.clone()))?;
 
         Ok(Self {
-            name: name,
             file: linter.file_path.clone(),
         })
     }
