@@ -1,7 +1,7 @@
 //! src/app_config/app_cache.rs
 
 use serde::Deserialize;
-use std::{fmt, io, path::PathBuf};
+use std::{fmt, fs, io, path::PathBuf};
 
 #[derive(Debug)]
 pub enum CacheError {
@@ -34,7 +34,7 @@ impl fmt::Display for CacheError {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct AppCache {
     pub cache_dir: PathBuf,
 }
@@ -42,7 +42,17 @@ pub struct AppCache {
 pub fn get_cache(file_path: Option<String>) -> Result<AppCache, CacheError> {
     let cache_path = match file_path {
         Some(path) => PathBuf::from(path),
-        None => return Err(CacheError::Invalid("Cache path not found".into())),
+        None => {
+            let xdg = xdg::BaseDirectories::with_prefix("repotools");
+
+            let p = xdg
+                .get_data_home()
+                .ok_or(CacheError::Invalid(String::from("")))?;
+
+            fs::create_dir_all(&p).map_err(CacheError::Io)?;
+
+            p
+        }
     };
 
     Ok(AppCache {
