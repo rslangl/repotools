@@ -4,7 +4,7 @@ use clap::{Args, Parser, Subcommand};
 
 use crate::features::ProjectFeatureArgs;
 use crate::initializers::InitProjectArgs;
-use crate::extras::ListItemsArgs;
+use crate::extras::ListItemArgs;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -39,5 +39,5 @@ pub enum Command {
     ProjectFeature(ProjectFeatureArgs),
 
     #[clap(name = "list", about = "List available templates and features")]
-    ListItems(ListItemsArgs)
+    ListItems(ListItemArgs)
 }

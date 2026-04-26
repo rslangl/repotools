@@ -1,6 +1,33 @@
-use clap::Args;
+use clap::{Args, Parser, ValueEnum};
 
-#[derive(Args)
+use std::fmt;
+
+#[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum ListItem {
+    All,
+    Templates,
+    Features,
+}
+
+impl fmt::Display for ListItem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ListItem::All => {
+                write!(f, "all")
+            }
+            ListItem::Templates => {
+                write!(f, "templates")
+            }
+            ListItem::Features => {
+                write!(f, "features")
+            }
+        }
+    }
+}
+
+#[derive(Args)]
 pub struct ListItemArgs {
-    // TODO: select templates,features,or all (default: all)
+
+    #[arg(short, long, default_value_t = ListItem::All)]
+    pub select: ListItem,
 }

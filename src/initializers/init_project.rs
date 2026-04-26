@@ -48,16 +48,16 @@ impl fmt::Display for InitProjectError {
                 write!(f, "Invalid template input: {}", e)
             }
             InitProjectError::FileWrite(e) => {
-                write!(f, "Template file write erro: {}", e)
+                write!(f, "Template file write error: {}", e)
             }
             InitProjectError::NotFound(e) => {
                 write!(f, "Template files not found: {}", e.display())
             }
             InitProjectError::MavenProject(e) => {
-                write!(f, "{}", e)
+                write!(f, "Maven template project error: {}", e)
             }
             InitProjectError::AnsibleProject(e) => {
-                write!(f, "{}", e)
+                write!(f, "Ansible template project error: {}", e)
             }
         }
     }

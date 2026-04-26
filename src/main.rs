@@ -81,6 +81,9 @@ fn main() -> Result<(), AppError> {
                 eprintln!("Could not add feature: {}", e)
             }
         }
+        Command::ListItems(_) => {
+            todo!()
+        }
     }
 
     Ok(())
