@@ -5,3 +5,4 @@ pub mod app_config;
 pub mod initializers;
 pub mod features;
 pub mod utils;
+pub mod extras;

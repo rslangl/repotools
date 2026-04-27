@@ -48,16 +48,16 @@ impl fmt::Display for InitProjectError {
                 write!(f, "Invalid template input: {}", e)
             }
             InitProjectError::FileWrite(e) => {
-                write!(f, "Template file write erro: {}", e)
+                write!(f, "Template file write error: {}", e)
             }
             InitProjectError::NotFound(e) => {
                 write!(f, "Template files not found: {}", e.display())
             }
             InitProjectError::MavenProject(e) => {
-                write!(f, "{}", e)
+                write!(f, "Maven template project error: {}", e)
             }
             InitProjectError::AnsibleProject(e) => {
-                write!(f, "{}", e)
+                write!(f, "Ansible template project error: {}", e)
             }
         }
     }
@@ -91,6 +91,9 @@ pub struct InitProjectArgs {
 
     #[arg(long)]
     pub settings: Option<Vec<ProjectSetting>>,
+//
+//     #[arg(long)]
+//     pub list: bool,
 }
 
 struct ProjectInitializer {
@@ -134,6 +137,18 @@ pub fn handle(
     config: AppConfig,
     cache: AppCache,
 ) -> Result<(), InitProjectError> {
+
+    // // Prints all available projects that is configured
+    // if args.list {
+    //     config
+    //         .templates
+    //         .iter()
+    //         .for_each(|t|
+    //             println!("{}", t.name)
+    //         );
+    //     return Ok(());
+    // }
+
     // Ensure the passed project type and given profile, if any, is present in the config file
     // before passing it along
     let template: PathBuf = config
