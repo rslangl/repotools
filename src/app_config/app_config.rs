@@ -97,8 +97,6 @@ pub struct ProjectTemplate {
     pub template_files: PathBuf,
 }
 
-// TODO: ProjectTemplate ToString() for printout in extras
-
 pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
     let config_path = match file_path {
         Some(path) => PathBuf::from(path),
