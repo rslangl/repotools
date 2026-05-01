@@ -23,9 +23,11 @@ pub struct GlobalOpts {
     #[arg(long, name = "cache")]
     pub cache_path: Option<String>,
 
+    // TODO: move under ConfigManagement
     #[arg(long, name = "clear-cache")]
     pub clear_cache: Option<bool>,
 
+    // TODO: move under ConfigManagement
     #[arg(long, name = "recreate-config")]
     pub recreate_config: Option<bool>,
 }
@@ -40,4 +42,6 @@ pub enum Command {
 
     #[clap(name = "list", about = "List available templates and features")]
     ListItems(ListItemArgs)
+
+    // TODO: ConfigManagement(ConfigManagementArgs)
 }

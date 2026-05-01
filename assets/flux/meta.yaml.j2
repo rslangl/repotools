@@ -1,0 +1,13 @@
+---
+repo_name: "{{ name }}"
+dirs:
+  - apps
+  - clusters
+entries:
+  - name: cluster/production
+    type: dir
+  - name: cluster/production/kustomization.yaml
+    type: file
+    render: true
+    template: cluster/production/kustomization.yaml.j2
+
