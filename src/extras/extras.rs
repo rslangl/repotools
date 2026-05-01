@@ -41,37 +41,38 @@ pub fn list_items(args: ListItemArgs, config: AppConfig) -> Result<(), String> {
     let mut out = String::new();
 
     // Gets all available projects that is configured
-    write!(out, "Project templates:\n------------------\n");
-
-    let templates = config
-        .templates
-        .iter()
-        .for_each(|t|
-            write!(out, "Type: {}\nProfile: {}\n\n", t.name, t.profile).unwrap()
-        );
+    if args.select == ListItem::Templates || args.select == ListItem::All {
+        write!(out, "Project templates:\n------------------\n");
+        let templates = config
+            .templates
+            .iter()
+            .for_each(|t|
+                write!(out, "Type: {}\nProfile: {}\n\n", t.name, t.profile).unwrap()
+            );
+    }
     
-    // Gets all available licenses that is configured
-    write!(out, "Feature: Licenses:\n------------------\n");
+    // Gets all available features that are configured
+    if args.select == ListItem::Features || args.select == ListItem::All {
+        write!(out, "Feature: Licenses:\n------------------\n");
+        let features = config
+            .features
+            .licenses
+            .iter()
+            .for_each(|t|
+                write!(out, "Name: {}\n\n", t.name).unwrap()
+            );
 
-    let features = config
-        .features
-        .licenses
-        .iter()
-        .for_each(|t|
-            write!(out, "Name: {}\n\n", t.name).unwrap()
-        );
+        write!(out, "Feature: Linters:\n-----------------\n");
+        let linters = config
+            .features
+            .linters
+            .iter()
+            .for_each(|t|
+                write!(out, "Type: {}\n\n", t.name).unwrap()
+            );
+    }
 
-    // get all available linters that is configured
-    write!(out, "Feature: Linters:\n-----------------\n");
-
-    let linters = config
-        .features
-        .linters
-        .iter()
-        .for_each(|t|
-            write!(out, "Type: {}\n\n", t.name).unwrap()
-        );
-
+    // Get all available linters that i
     println!("{}", out);
 
     Ok(())
