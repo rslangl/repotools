@@ -11,6 +11,7 @@ use repotools::{
     cli,
     features::{ProjectFeatureError, project_feature},
     initializers::{InitProjectError, init_project},
+    extras,
 };
 
 #[derive(Debug)]
@@ -79,6 +80,11 @@ fn main() -> Result<(), AppError> {
         Command::ProjectFeature(args) => {
             if let Err(e) = project_feature::handle(args, config) {
                 eprintln!("Could not add feature: {}", e)
+            }
+        }
+        Command::ListItems(args) => {
+            if let Err(e) = extras::list_items(args, config) {
+                eprintln!("Could not list items: {}", e)
             }
         }
     }
