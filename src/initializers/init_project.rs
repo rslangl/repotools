@@ -10,7 +10,10 @@ use crate::{
         ansible::{AnsibleProject, AnsibleProjectError},
         maven::{MavenProject, MavenProjectError},
     },
-    utils::file_writer::FileWriteError,
+    utils::{
+        file_writer::FileWriteError,
+        write
+    },
 };
 
 #[derive(Debug)]
@@ -18,9 +21,10 @@ pub enum InitProjectError {
     Invalid(String),
     FileWrite(FileWriteError),
     NotFound(PathBuf),
+    InitializerError(String),
     // Specific project type errors
-    MavenProject(MavenProjectError),
-    AnsibleProject(AnsibleProjectError),
+    // MavenProject(MavenProjectError),
+    // AnsibleProject(AnsibleProjectError),
 }
 
 impl From<FileWriteError> for InitProjectError {
@@ -29,17 +33,23 @@ impl From<FileWriteError> for InitProjectError {
     }
 }
 
-impl From<MavenProjectError> for InitProjectError {
-    fn from(e: MavenProjectError) -> Self {
-        InitProjectError::MavenProject(e)
+impl From<InitializerError> for InitProjectError {
+    fn from(e: InitializerError) -> Self {
+        InitProjectError::InitializerError(e)
     }
 }
 
-impl From<AnsibleProjectError> for InitProjectError {
-    fn from(e: AnsibleProjectError) -> Self {
-        InitProjectError::AnsibleProject(e)
-    }
-}
+// impl From<MavenProjectError> for InitProjectError {
+//     fn from(e: MavenProjectError) -> Self {
+//         InitProjectError::MavenProject(e)
+//     }
+// }
+//
+// impl From<AnsibleProjectError> for InitProjectError {
+//     fn from(e: AnsibleProjectError) -> Self {
+//         InitProjectError::AnsibleProject(e)
+//     }
+// }
 
 impl fmt::Display for InitProjectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -53,14 +63,24 @@ impl fmt::Display for InitProjectError {
             InitProjectError::NotFound(e) => {
                 write!(f, "Template files not found: {}", e.display())
             }
-            InitProjectError::MavenProject(e) => {
-                write!(f, "Maven template project error: {}", e)
+            InitProjectError::InitializerError(e) => {
+                write!(f, "Initialization error: {}", e)
             }
-            InitProjectError::AnsibleProject(e) => {
-                write!(f, "Ansible template project error: {}", e)
-            }
+            // InitProjectError::MavenProject(e) => {
+            //     write!(f, "Maven template project error: {}", e)
+            // }
+            // InitProjectError::AnsibleProject(e) => {
+            //     write!(f, "Ansible template project error: {}", e)
+            // }
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum ProjectTypes {
+    Ansible,
+    Flux,
+    Maven,
 }
 
 #[derive(Clone)]
@@ -83,54 +103,51 @@ impl FromStr for ProjectSetting {
 
 #[derive(Args)]
 pub struct InitProjectArgs {
-    #[arg(long = "type")]
-    pub project_type: String,
+    #[arg(short, long = "type")]
+    pub project_type: ProjectTypes,
 
-    #[arg(long)]
+    #[arg(short, long, default_value_t = "default")]
     pub profile: Option<String>,
 
     #[arg(long)]
     pub settings: Option<Vec<ProjectSetting>>,
+}
+
+// struct ProjectInitializer {
+//     initialize_strategy: Box<dyn ProjectStrategy>,
+// }
 //
-//     #[arg(long)]
-//     pub list: bool,
-}
+// impl ProjectInitializer {
+//     fn new(initialize_strategy: Box<dyn ProjectStrategy>) -> Self {
+//         Self {
+//             initialize_strategy,
+//         }
+//     }
+//
+//     fn initialize(self) -> Result<(), InitProjectError> {
+//         Ok(ProjectStrategy::write_templates(self.initialize_strategy)?)
+//     }
+// }
+//
+// pub trait ProjectStrategy {
+//     fn write_templates(self: Box<Self>) -> Result<(), InitProjectError>;
+// }
 
-struct ProjectInitializer {
-    initialize_strategy: Box<dyn ProjectStrategy>,
-}
-
-impl ProjectInitializer {
-    fn new(initialize_strategy: Box<dyn ProjectStrategy>) -> Self {
-        Self {
-            initialize_strategy,
-        }
-    }
-
-    fn initialize(self) -> Result<(), InitProjectError> {
-        Ok(ProjectStrategy::write_templates(self.initialize_strategy)?)
-    }
-}
-
-pub trait ProjectStrategy {
-    fn write_templates(self: Box<Self>) -> Result<(), InitProjectError>;
-}
-
-struct ProjectFactory;
-
-impl ProjectFactory {
-    fn create(
-        project_type: String,
-        template_files: PathBuf,
-        settings: HashMap<String, String>,
-    ) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
-        match project_type.to_uppercase().as_str() {
-            "MAVEN" => Ok(Box::new(MavenProject::new(template_files, settings)?)),
-            "ANSIBLE" => Ok(Box::new(AnsibleProject::new(template_files, settings)?)),
-            _ => Err(InitProjectError::Invalid("Unknown project type".into())),
-        }
-    }
-}
+// struct ProjectFactory;
+//
+// impl ProjectFactory {
+//     fn create(
+//         project_type: String,
+//         template_files: PathBuf,
+//         settings: HashMap<String, String>,
+//     ) -> Result<Box<dyn ProjectStrategy>, InitProjectError> {
+//         match project_type.to_uppercase().as_str() {
+//             "MAVEN" => Ok(Box::new(MavenProject::new(template_files, settings)?)),
+//             "ANSIBLE" => Ok(Box::new(AnsibleProject::new(template_files, settings)?)),
+//             _ => Err(InitProjectError::Invalid("Unknown project type".into())),
+//         }
+//     }
+// }
 
 pub fn handle(
     args: InitProjectArgs,
@@ -138,20 +155,9 @@ pub fn handle(
     cache: AppCache,
 ) -> Result<(), InitProjectError> {
 
-    // // Prints all available projects that is configured
-    // if args.list {
-    //     config
-    //         .templates
-    //         .iter()
-    //         .for_each(|t|
-    //             println!("{}", t.name)
-    //         );
-    //     return Ok(());
-    // }
-
     // Ensure the passed project type and given profile, if any, is present in the config file
     // before passing it along
-    let template: PathBuf = config
+    let meta_file: PathBuf = config
         .templates
         .iter()
         .find(|p| {
@@ -162,14 +168,14 @@ pub fn handle(
             }
         })
         .ok_or(InitProjectError::Invalid(String::from(
-            "Could not find template",
+            "Could not find project type",
         )))
         .and_then(|p| -> Result<PathBuf, InitProjectError> {
-            println!("CACHE DIR: {}", cache.cache_dir.clone().display());
-            if p.template_files.starts_with(cache.cache_dir) {
-                Ok(p.template_files.clone())
+            //println!("CACHE DIR: {}", cache.cache_dir.clone().display());
+            if p.meta.starts_with(cache.cache_dir) {
+                Ok(p.meta.clone())
             } else {
-                Err(InitProjectError::NotFound(p.template_files.clone()))
+                Err(InitProjectError::NotFound(p.meta.clone()))
             }
         })?;
 
@@ -180,12 +186,18 @@ pub fn handle(
         None => HashMap::new(),
     };
 
-    let strategy: Box<dyn ProjectStrategy> =
-        ProjectFactory::create(args.project_type, template, settings)?;
+    write(meta_file, settings)?;
 
-    let initializer: ProjectInitializer = ProjectInitializer::new(strategy);
-
-    initializer.initialize()?;
+    // let strategy: Box<dyn ProjectStrategy> = match args.project_type) {
+    //     ProjectType::Ansible => Ok(Box::new(MavenProject::new(meta_file, settings)?)),
+    //     ProjectType::Flux => Ok(Box::new(AnsibleProject::new(meta_file, settings)?)),
+    //     ProjectType::Maven => Ok(Box::new(FluxProject::new(meta_file, settings)?)),
+    //     _ => Err(InitProjectError::Invalid("Unknown project type".into())),
+    // }
+    //
+    // let initializer: ProjectInitializer = ProjectInitializer::new(strategy);
+    //
+    // initializer.initialize()?;
 
     Ok(())
 }

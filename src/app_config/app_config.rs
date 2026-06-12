@@ -94,7 +94,8 @@ pub struct Features {
 pub struct ProjectTemplate {
     pub name: String,
     pub profile: String,
-    pub template_files: PathBuf,
+    //pub template_files: PathBuf,
+    pub meta: PathBuf,
 }
 
 pub fn get_config(file_path: Option<String>) -> Result<AppConfig, ConfigError> {
